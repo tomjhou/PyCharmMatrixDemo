@@ -136,7 +136,7 @@ def on_keypress(event):
     #    print('key: ', event.key, event.xdata, event.ydata)
     if event.key == "x":
         do_quit()
-    if event.key == "a":
+    if event.key == "a" or event.key == " ":
         do_animate()
     if event.key == "c":
         do_show_circle()

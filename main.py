@@ -15,6 +15,7 @@ import global_vars as gv
 
 # Thickness of matrix, input, and output vectors
 VECTOR_THICKNESS = 30
+ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = True  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
@@ -55,7 +56,7 @@ def create_initial_graphics():
     barlist[1].set_color('g')
     plt.xticks([0, 1], ['x', 'y'])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output as dot products (blue/green) values")
+    plt.title("Output as dot products (blue/green bars)")
     plt.show(block=False)
 
     # Create bottom-right output plot with dashed circle
@@ -245,7 +246,7 @@ while mg.quitflag == 0:
     canvas.restore_region(bg1)  # Restores static elements and erases background
     arrowInput.set_positions((0, 0), tuple(vector_input))
 
-    if False:  # mg.flagCircum:
+    if ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES and mg.flagCircum:
         # If showing circumference colors, then make arrows black, which is less distracting
         arrowInput.set_color('k')
         arrowOutput.set_color('k')
