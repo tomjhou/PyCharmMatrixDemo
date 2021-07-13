@@ -13,6 +13,9 @@ import MatrixDemoMath as mm
 import MatrixDemoGraphics as mg
 import global_vars as gv
 
+# Thickness of matrix, input, and output vectors
+VECTOR_THICKNESS = 30
+
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
 axisLimit = 2  # Coordinate limits for x-y plots
@@ -33,6 +36,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
+    plt.title("Matrix (blue/green) and input vector (red)")
     plt.show(block=False)
 
     linex = np.linspace(-1, 1, 9)
@@ -51,6 +55,7 @@ def create_initial_graphics():
     barlist[1].set_color('g')
     plt.xticks([0, 1], ['x', 'y'])
     plt.ylim([-axisLimit, axisLimit])
+    plt.title("Dot products (blue/green) = output values")
     plt.show(block=False)
 
     # Create bottom-right output plot with dashed circle
@@ -59,6 +64,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
+    plt.title("Output vector")
     plt.show(block=False)
 
     # Need this so that background bitmaps will be up to date
@@ -82,16 +88,16 @@ if __name__ == '__main__':
           '"x" to exit')
 
 # Determine steps between circumference dots
-u = mm.UnitCircleStuff(stepsPerOrbit, dotsPerOrbit, mg.INPUT_VECTOR_COLOR)
-stepsPerOrbit = u.steps  # This might be changed, to be an integer multiple of dotsPerOrbit
-print('Total steps {:d}, circumference dots {:d}'.format(u.steps, u.numdots))
+u = mm.UnitCircleStuff(stepsPerOrbit, dotsPerOrbit, mg.CIRCUMFERENCE_COLOR1, mg.CIRCUMFERENCE_COLOR2)
+stepsPerOrbit = u.numsteps  # This might be changed, to be an integer multiple of dotsPerOrbit
+print('Total steps {:d}, circumference dots {:d}'.format(u.numsteps, u.numdots))
 
 # Create figure
 gObjects = mg.GraphicsObjects()
 
 canvas = gObjects.canvas
 
-# Create static objects, and save background bitmaps so we don't have to redraw them over and over.
+# Create plots, and save background bitmaps so we don't have to redraw them over and over.
 # This greatly speeds up animation
 create_initial_graphics()
 
@@ -101,10 +107,14 @@ mm.quitflag = False
 gObjects.textObj.update_array_text(Array1)
 
 # Add vector1 (top row of 2x2 array) to top-right graph
-matrixArrows = [mpatches.FancyArrowPatch((0, 0), tuple(Array1[0, :]), color='b', mutation_scale=20)]
+matrixArrows = [mpatches.FancyArrowPatch((0, 0), tuple(Array1[0, :]),
+                                         color=mg.MATRIX_ROW1_COLOR,
+                                         mutation_scale=VECTOR_THICKNESS)]   # Thickness
 gv.ax1.add_patch(matrixArrows[0])
 # Add vector2 (bottom row of 2x2 array) to top-right graph
-matrixArrows.append(mpatches.FancyArrowPatch((0, 0), tuple(Array1[1, :]), color='g', mutation_scale=20))
+matrixArrows.append(mpatches.FancyArrowPatch((0, 0), tuple(Array1[1, :]),
+                                             color=mg.MATRIX_ROW2_COLOR,
+                                             mutation_scale=VECTOR_THICKNESS))  # Thickness
 gv.ax1.add_patch(matrixArrows[1])
 
 # Generate starting points around unit circle
@@ -114,9 +124,13 @@ currentStep = 0
 start = True
 cycles = 0
 
-# Create arrows
-arrowInput = mpatches.FancyArrowPatch((0, 0), (0, 0), color=mg.INPUT_VECTOR_COLOR, mutation_scale=10)
-arrowOutput = mpatches.FancyArrowPatch((0, 0), (0, 0), color=mg.OUTPUT_VECTOR_COLOR, mutation_scale=10)
+# Create input/output arrows
+arrowInput = mpatches.FancyArrowPatch((0, 0), (0, 0),
+                                      color=mg.INPUT_VECTOR_COLOR,
+                                      mutation_scale=VECTOR_THICKNESS)
+arrowOutput = mpatches.FancyArrowPatch((0, 0), (0, 0),
+                                       color=mg.OUTPUT_VECTOR_COLOR,
+                                       mutation_scale=VECTOR_THICKNESS)
 gv.ax1.add_patch(arrowInput)
 ax2.add_patch(arrowOutput)
 if not mg.flagShow4:
@@ -124,12 +138,41 @@ if not mg.flagShow4:
     plt.axis('off')
 
 # Add "shadow" and perpendicular "normal" lines to input axis
-lineNormal = gv.ax1.add_line(Line2D([0, 0], [1, 1], color=mg.INPUT_VECTOR_COLOR))
-lineShadow = gv.ax1.add_line(Line2D([0, 0], [1, 1], color='b'))
+lineNormal = []
+lineShadow = []
+
+########################################################################
+#
+#  Documentation for add_line (and other artist elements) is here:
+#
+#  https://matplotlib.org/1.3.0/api/artist_api.html
+#
+########################################################################
+
+# Normal/shadow for first row
+lineNormal.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
+                                         color=(0.5, 0.5, 0.5),
+                                         linestyle=':')))  # Dotted line
+lineShadow.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
+                                         linewidth=3,
+                                         linestyle='--',   # Dashed line
+                                         color=mg.SHADOW1_COLOR)))
+# Normal/shadow for second row
+lineNormal.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
+                                         color=(0.5, 0.5, 0.5),
+                                         linestyle=':')))  # Dotted line
+lineShadow.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
+                                         linewidth=3,
+                                         linestyle='--',   # Dashed line
+                                         color=mg.SHADOW2_COLOR)))
 
 # Add shadow lines to output axis
-lineOutputX = ax2.add_line(Line2D([0, 0], [1, 1], color='b'))
-lineOutputY = ax2.add_line(Line2D([0, 0], [1, 1], color='g'))
+lineOutputX = ax2.add_line(Line2D([0, 0], [1, 1],
+                                  linewidth=3,
+                                  color=mg.SHADOW1_COLOR))
+lineOutputY = ax2.add_line(Line2D([0, 0], [1, 1],
+                                  linewidth=3,
+                                  color=mg.SHADOW2_COLOR))
 
 # Need to call this the first time or else objects won't draw later
 plt.pause(0.01)
@@ -143,28 +186,31 @@ while mg.quitflag == 0:
     # V2 is transformed vector in lower-right plot
     vector_output = np.matmul(Array1, vector_input)
 
-    # Get normal vector for matrix row 1
-    matrixRow1Norm = Array1[0, :] / np.linalg.norm(Array1[0, :])
+    for v in range(0,2):
+        # Get normal vector for matrix row 1
+        matrixRowNorm = Array1[v, :] / np.linalg.norm(Array1[v, :])
 
-    # Dot product of input vector with normalized array row 1
-    matrixRow1Dot = np.dot(matrixRow1Norm, vector_input)
-    # Update position of line indicating normal/perpendicular
-    normalXvalues = [vector_input[0], matrixRow1Norm[0] * matrixRow1Dot]
-    normalYvalues = [vector_input[1], matrixRow1Norm[1] * matrixRow1Dot]
-    lineNormal.set_data(normalXvalues, normalYvalues)
-    # Update position of line indicating shadow/projection onto unit vector
-    if matrixRow1Dot < 0:
-        # Negative dot product, need to draw extra line
-        shadowXvalues = [0, matrixRow1Norm[0] * matrixRow1Dot]
-        shadowYvalues = [0, matrixRow1Norm[1] * matrixRow1Dot]
-    else:
-        # Zero or positive dot product, no need to draw shadow, as it would just overlap line
-        shadowXvalues = [0, 0]
-        shadowYvalues = [0, 0]
-    lineShadow.set_data(shadowXvalues, shadowYvalues)
+        # Dot product of input vector with normalized array row 1
+        matrixRowDot = np.dot(matrixRowNorm, vector_input)
+
+        # Update position of line indicating normal/perpendicular
+        normalXvalues = [vector_input[0], matrixRowNorm[0] * matrixRowDot]
+        normalYvalues = [vector_input[1], matrixRowNorm[1] * matrixRowDot]
+        lineNormal[v].set_data(normalXvalues, normalYvalues)
+
+        # Update position of line indicating shadow/projection onto unit vector
+        # if matrixRowDot < 0:  # Negative dot product, need to draw extra line
+        shadowXvalues = [0, matrixRowNorm[0] * matrixRowDot]
+        shadowYvalues = [0, matrixRowNorm[1] * matrixRowDot]
+        lineShadow[v].set_data(shadowXvalues, shadowYvalues)
 
     # Update input and output vector text
-    gObjects.textObj.update_input_vector(vector_input)
+    if mg.flagCircum:
+        # Use rainbow color for text
+        gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
+    else:
+        gObjects.textObj.update_input_vector(vector_input)
+
     gObjects.textObj.update_output_vector(vector_output, mg.matrixRowsToShow)
     gObjects.textObj.redraw()
 
@@ -195,18 +241,25 @@ while mg.quitflag == 0:
         ax2.add_patch(circ)      # This is needed for draw_artist to work. However, patch may now show up extraneously, e.g. when mouse rolls over button
         ax2.draw_artist(circ)
 
-    # Draw top-right graph
+    # Draw top-right "INPUT VECTOR" graph
     canvas.restore_region(bg1)  # Restores static elements and erases background
     arrowInput.set_positions((0, 0), tuple(vector_input))
 
+    if False:  # mg.flagCircum:
+        # If showing circumference colors, then make arrows black, which is less distracting
+        arrowInput.set_color('k')
+        arrowOutput.set_color('k')
+    else:
+        # IF not showing circumference dots, then arrows are red/purple
+        arrowInput.set_color(mg.INPUT_VECTOR_COLOR)
+        arrowOutput.set_color(mg.OUTPUT_VECTOR_COLOR)
+
     if mg.matrixRowsToShow <= 1:
-        # Draw unit arrow and first matrix row, but nothing else
+        # Draw unit arrow and first matrix row, but not second matrix row or circumference dots
         gv.ax1.draw_artist(matrixArrows[0])
         gv.ax1.draw_artist(arrowInput)
-        gv.ax1.draw_artist(lineNormal)
-        gv.ax1.draw_artist(lineShadow)
     else:
-        if mg.flagShow4 and mg.flagCircum:
+        if mg.flagCircum:
             # Draw all items including circumference dots
             for p in gv.ax1.patches:
                 gv.ax1.draw_artist(p)
@@ -216,16 +269,23 @@ while mg.quitflag == 0:
             gv.ax1.draw_artist(matrixArrows[1])
             gv.ax1.draw_artist(arrowInput)
 
+    if mg.flagShadow:
+        # Draw "shadow" projections
+        for v in range(0,mg.matrixRowsToShow):
+            gv.ax1.draw_artist(lineNormal[v])
+            gv.ax1.draw_artist(lineShadow[v])
+
     # Draw bottom-right graph elements, if needed
     if mg.flagShow4 and mg.matrixRowsToShow > 1:
         canvas.restore_region(bg2)  # Restores static elements and erases background
         arrowOutput.set_positions((0, 0), tuple(vector_output))
 
         # Draw output vectors
-        lineOutputX.set_data([0, vector_output[0]], [0, 0])
-        lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
-        ax2.draw_artist(lineOutputX)
-        ax2.draw_artist(lineOutputY)
+        if mg.flagShadow:
+            lineOutputX.set_data([0, vector_output[0]], [0, 0])
+            lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
+            ax2.draw_artist(lineOutputX)
+            ax2.draw_artist(lineOutputY)
 
         # Draw purple circle patches
         if mg.flagCircum:
@@ -301,7 +361,7 @@ while mg.quitflag == 0:
 
     if mg.flagAnimate:
         currentStep = currentStep + 1
-        if currentStep >= u.steps:
+        if currentStep >= u.numsteps:
             cycles = cycles + 1
             currentStep = currentStep - stepsPerOrbit
 

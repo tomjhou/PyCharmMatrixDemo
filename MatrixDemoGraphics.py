@@ -16,29 +16,39 @@ FONT_FAMILY = 'monospace'
 FONT_SIZE = 16
 
 # Text coordinates, horizontal
-TEXT_INPUT_MATRIX_X = 0.01
-TEXT_OPERATORS_X = TEXT_INPUT_MATRIX_X + 0.45 * FONT_SIZE / 12
-TEXT_OUTPUT_VECTOR_X = TEXT_OPERATORS_X + 0.1
+TEXT_INPUT_MATRIX_X = 0
+TEXT_STAR_X = TEXT_INPUT_MATRIX_X + 0.34 * FONT_SIZE / 12
+TEXT_OPERATOR_X_SPACING = 0.05
+TEXT_IN_OUT_X_OFFSET = 0.28  # Vertical space between input and output matrices
 
 # Text coordinates, vertical
 TEXT_Y_COORD = 0.7  # Height of input matrix text above horizontal axis
 TEXT_MATRIX_ROW_Y_SPACING = 0.08  # Vertical space between rows of input matrix
-TEXT_Y_SPACING = 0.35  # Vertical space between input and output matrices
+TEXT_IN_OUT_Y_OFFSET = 0     # Vertical space between input and output matrices
 
-INPUT_VECTOR_COLOR = 'r'
+INPUT_VECTOR_COLOR  = (1.0, 0, 0.0)  # Red (0, 0, 0)  # Black
 OUTPUT_VECTOR_COLOR = (0.5, 0, 0.5)  # Dark purple
+
+CIRCUMFERENCE_COLOR1 = (0.0, 0.0, 0.0)  # Black
+CIRCUMFERENCE_COLOR2 = (0.8, 0.8, 0.8)  # Light grey
+
+MATRIX_ROW1_COLOR = (0.25, 0.25, 1.00)  # Light blue
+MATRIX_ROW2_COLOR = (0.25, 0.75, 0.25)  # Light green
+
+SHADOW1_COLOR = (0, 0, 0.5)
+SHADOW2_COLOR = (0, 0.35, 0)
 
 quitflag = False  # When true, program will exit
 flagAnimate = False  # When true, graph will animate
-flagRecalc = False  # When true, will redraw existing graph items
-flagRedrawAxes = False  # When true, will redraw existing graph axes
 flagChangeMatrix = False  # When true, will update matrix and redraw
 flagCircum = False  # When true, will plot ring of red/purple dots on circumference
+flagRecalc = False  # When true, will redraw existing graph items
+flagRedrawAxes = False  # When true, will redraw existing graph axes
+flagShadow = False
 flagX = 0  # Indicates mouse x position
 flagY = 0  # Indicates mouse y position
-flagShow1 = True
 matrixRowsToShow = 1
-flagShow4 = False
+flagShow4 = True
 whichRowToAdjust = 0
 
 flagMouseDown = False
@@ -84,6 +94,10 @@ def do_1_vs_2(event=None):
     matrixRowsToShow = 3 - matrixRowsToShow  # Toggle between 1 and 2 rows
     flagRecalc = True
 
+def do_shadow(event=None):
+    global flagShadow, flagRecalc
+    flagShadow = 1 - flagShadow
+    flagRecalc = True
 
 def do_quit(event=None):
     global quitflag
@@ -96,21 +110,25 @@ def do_animate(event=None):
 
 
 def do_show_circle(event=None):
-    global flagCircum
-    flagCircum = not flagCircum
+    global flagCircum, flagShow4
+    if flagShow4:
+        flagCircum = not flagCircum
 
-
+# Toggles flagShow4 flag, then triggers recalculation
+# This only applies to 2D matrices
 def do_toggle_output(event=None):
-    global matrixRowsToShow, flagRecalc, flagShow4, flagRedrawAxes
+    global matrixRowsToShow, flagRecalc, flagShow4, flagRedrawAxes, flagCircum
     if matrixRowsToShow > 1:
         flagRecalc = True
         flagShow4 = not flagShow4
+        if not flagShow4:
+            flagCircum = False
         flagRedrawAxes = True
     else:
         flagRecalc = False
         flagShow4 = False
         flagRedrawAxes = False
-
+        flagCircum = False
 
 # Keyboard press
 def on_keypress(event):
@@ -122,6 +140,8 @@ def on_keypress(event):
         do_animate()
     if event.key == "c":
         do_show_circle()
+    if event.key == "h":
+        do_shadow()
     if event.key == "u":
         flagChangeMatrix = True
         whichRowToAdjust = -1
@@ -135,13 +155,18 @@ def on_keypress(event):
 def fmt(n: np.float64):
     return '{:+2.3f}'.format(n)
 
+def fmt_bracket(n: np.float64):
+    return '[{:+2.3f}]'.format(n)
 
 # Format a 2D vector as text inside brackets
 def fmt_row(r: np.float64):
-    return '[ ' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
+    return '[' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
 
 
+# Handle buttons and text objects. This does NOT manage the plots.
+# Plots are created after this object's constructor returns, and create_initial_graphs() is called.
 class GraphicsObjects:
+
     def __init__(self):
         # Create figure
         fig = plt.figure()
@@ -172,19 +197,28 @@ class GraphicsObjects:
         # Creating new axes puts them below main graphs. Is this behavior guaranteed?
 
         # Create one new axis for each new button
-        ax_animate = plt.axes([0.15, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
+        position = 0
+        ax_animate = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
         self.b_animate = Button(ax_animate, 'Toggle animate (a)')
         self.b_animate.on_clicked(do_animate)
 
-        ax_1_vs_2 = plt.axes([0.15 + BUTTON_SPACING_X, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
+        position = position + 1
+        ax_shadow = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
+        self.b_shadow = Button(ax_shadow, 'Toggle shadows (h)')
+        self.b_shadow.on_clicked(do_shadow)
+
+        position = position + 1
+        ax_1_vs_2 = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
         self.b_1_vs_2 = Button(ax_1_vs_2, '1/2-row matrix (2)')
         self.b_1_vs_2.on_clicked(do_1_vs_2)
 
-        ax_output = plt.axes([0.15 + BUTTON_SPACING_X * 2, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
+        position = position + 1
+        ax_output = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
         self.b_output = Button(ax_output, 'Toggle output (4)')
         self.b_output.on_clicked(do_toggle_output)
 
-        ax_circum = plt.axes([0.15 + BUTTON_SPACING_X * 3, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
+        position = position + 1
+        ax_circum = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
         self.b_circum = Button(ax_circum, 'Show circle (c)')
         self.b_circum.on_clicked(do_show_circle)
 
@@ -197,85 +231,97 @@ class TextObjects:
     def __init__(self, _canvas, _figure):
         self.canvas = _canvas
         self.fig = _figure
+
         # Create text plot in top left
         plt.subplot(221)
         self.ax_text = plt.gca()
         plt.axis('off')
 
-        # Draw asterisk and equals sign on top-left plot
-        self.ax_text.text(TEXT_OPERATORS_X, TEXT_Y_COORD, '*',
+        # Draw "*" asterisk and "=" equals sign
+        self.ax_text.text(TEXT_STAR_X, TEXT_Y_COORD, '*',
                           family=FONT_FAMILY,
                           size=FONT_SIZE
                           )
-        self.ax_text.text(TEXT_OPERATORS_X, TEXT_Y_COORD - TEXT_Y_SPACING, '=',
+        self.ax_text.text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET, TEXT_Y_COORD - TEXT_IN_OUT_Y_OFFSET, '=',
                           family=FONT_FAMILY,
                           size=FONT_SIZE
                           )
 
+        # Top row of matrix
         self.textObjArrayRow1 = self.ax_text.text(
             TEXT_INPUT_MATRIX_X,
             TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2,
             '',
-            color='b',
+            color=MATRIX_ROW1_COLOR,
             family=FONT_FAMILY,
             size=FONT_SIZE)
+        # Bottom row of matrix
         self.textObjArrayRow2 = self.ax_text.text(
             TEXT_INPUT_MATRIX_X,
             TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2,
             '',
-            color='b',
+            color=MATRIX_ROW2_COLOR,
             family=FONT_FAMILY,
             size=FONT_SIZE)
-        # Draw blank text
+        # Top number in input vector
         self.textObjInputVector1 = self.ax_text.text(
-            TEXT_OUTPUT_VECTOR_X,
-            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2,
-            '',
-            color=INPUT_VECTOR_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE
-        )  # Blank second element in input vector
-        self.textObjInputVector2 = self.ax_text.text(
-            TEXT_OUTPUT_VECTOR_X,
+            TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
             TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2,
             '',
             color=INPUT_VECTOR_COLOR,
             family=FONT_FAMILY,
             size=FONT_SIZE
-        )  # Blank second element in input vector
+        )
+        # Bottom number in input vector
+        self.textObjInputVector2 = self.ax_text.text(
+            TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
+            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2,
+            '',
+            color=INPUT_VECTOR_COLOR,
+            family=FONT_FAMILY,
+            size=FONT_SIZE
+        )
+        # Top number in output vector
         self.textObjOutputVectorRow1 = self.ax_text.text(
-            TEXT_OUTPUT_VECTOR_X,
-            TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_Y_SPACING,
+            TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+            TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
             '',
-            color='b',
+            color=MATRIX_ROW1_COLOR,
             family=FONT_FAMILY,
             size=FONT_SIZE
-        )  # First row of output vector
+        )
+        # Bottom number in output vector
         self.textObjOutputVectorRow2 = self.ax_text.text(
-            TEXT_OUTPUT_VECTOR_X,
-            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_Y_SPACING,
+            TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
             '',
-            color='g',
+            color=MATRIX_ROW2_COLOR,
             family=FONT_FAMILY,
             size=FONT_SIZE
-        )  # Second row of output vector
+        )
 
         self.canvas.draw()  # Need this so that text will render to screen, before we capture background
         self.background = self.canvas.copy_from_bbox(self.ax_text.bbox)
 
-    # Format a 2x2 array as two rows of text, and write this at specified y-coordinate
+    # Write 2x2 array values
     def update_array_text(self, array):
         self.textObjArrayRow1.set_text(fmt_row(array[0, :]))
         self.textObjArrayRow2.set_text(fmt_row(array[1, :]))
 
-    def update_input_vector(self, vector):
-        self.textObjInputVector1.set_text(fmt(vector[0]))
-        self.textObjInputVector2.set_text(fmt(vector[1]))
+    # Write input vector values
+    def update_input_vector(self, vector, new_color=INPUT_VECTOR_COLOR):
+        self.textObjInputVector1.set_text(fmt_bracket(vector[0]))
+        self.textObjInputVector1.set_color(new_color)
+        self.textObjInputVector2.set_text(fmt_bracket(vector[1]))
+        self.textObjInputVector2.set_color(new_color)
 
-    def update_output_vector(self, vector, elements):
-        self.textObjOutputVectorRow1.set_text(fmt(vector[0]))
+    # Write output vector values
+    def update_output_vector(self, vector, elements, new_color=OUTPUT_VECTOR_COLOR):
+        self.textObjOutputVectorRow1.set_text(fmt_bracket(vector[0]))
+        self.textObjOutputVectorRow1.set_color(MATRIX_ROW1_COLOR)
         if elements > 1:
-            self.textObjOutputVectorRow2.set_text(fmt(vector[1]))
+            self.textObjOutputVectorRow2.set_text(fmt_bracket(vector[1]))
+            self.textObjOutputVectorRow2.set_color(MATRIX_ROW2_COLOR)
 
     def redraw(self):
         #   axText.draw_artist(axText.patch)  # Erase background
