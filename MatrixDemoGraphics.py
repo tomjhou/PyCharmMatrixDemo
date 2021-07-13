@@ -168,12 +168,26 @@ def fmt_row(r: np.float64):
 class GraphicsObjects:
 
     def __init__(self):
+
+        mpl.use('TkAgg')   # Qt5Agg might also be available, but doesn't seem to behave as nicely
+
+        self.backend = mpl.get_backend()
+        print("Matplotlib backend is: " + self.backend) # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
+
         # Create figure
         fig = plt.figure()
-
         window = plt.get_current_fig_manager().window
         dpi = fig.dpi
-        screen_x, screen_y = window.wm_maxsize()
+
+        if self.backend == "Qt5Agg":
+            # Need a hack to get screen size. Temporarily make a full-screen window, get its size, then later set "real" size
+            window.showMaximized()  # Make window fullscreen
+            plt.pause(.001)  # Draw items to screen so we can get size
+            screen_x, screen_y = fig.get_size_inches() * fig.dpi  # size in pixels
+        else:
+            # window.state('zoomed')  # Make window fullscreen, for TkAgg
+            screen_x, screen_y = window.wm_maxsize() # Get full scren monitor coordinates for TkAgg. Doesn't work under Qt5Agg
+
 #        window.state('zoomed')
         screen_y = screen_y - 50  # Subtract a small amount or else the toolbar at bottom will mess things up.
         fig.set_size_inches(screen_y / dpi, screen_y / dpi)  # Make square window at max size, but bar at bottom messes up size

@@ -55,7 +55,7 @@ def create_initial_graphics():
     barlist[1].set_color('g')
     plt.xticks([0, 1], ['x', 'y'])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Dot products (blue/green) = output values")
+    plt.title("Output as dot products (blue/green) values")
     plt.show(block=False)
 
     # Create bottom-right output plot with dashed circle
@@ -64,7 +64,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output vector")
+    plt.title("Output as vector")
     plt.show(block=False)
 
     # Need this so that background bitmaps will be up to date
