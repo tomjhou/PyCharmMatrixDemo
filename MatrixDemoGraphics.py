@@ -39,7 +39,7 @@ SHADOW1_COLOR = (0, 0, 0.5)
 SHADOW2_COLOR = (0, 0.35, 0)
 
 quitflag = False  # When true, program will exit
-flagAnimate = False  # When true, graph will animate
+flagAnimate = True  # When true, graph will animate
 flagChangeMatrix = False  # When true, will update matrix and redraw
 flagCircum = False  # When true, will plot ring of red/purple dots on circumference
 flagRecalc = False  # When true, will redraw existing graph items
@@ -136,7 +136,7 @@ def on_keypress(event):
     #    print('key: ', event.key, event.xdata, event.ydata)
     if event.key == "x":
         do_quit()
-    if event.key == "a" or event.key == " ":
+    if event.key == " ":
         do_animate()
     if event.key == "c":
         do_show_circle()
@@ -213,31 +213,31 @@ class GraphicsObjects:
         # Create one new axis for each new button
         position = 0
         ax_animate = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_animate = Button(ax_animate, 'Toggle animate (a)')
+        self.b_animate = Button(ax_animate, 'Toggle animate\n(space bar)')
         self.b_animate.on_clicked(do_animate)
 
         position = position + 1
         ax_shadow = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_shadow = Button(ax_shadow, 'Toggle shadows (h)')
+        self.b_shadow = Button(ax_shadow, 'Toggle shadows\n(h)')
         self.b_shadow.on_clicked(do_shadow)
 
         position = position + 1
         ax_1_vs_2 = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_1_vs_2 = Button(ax_1_vs_2, '1/2-row matrix (2)')
+        self.b_1_vs_2 = Button(ax_1_vs_2, '1/2-row matrix\n(2)')
         self.b_1_vs_2.on_clicked(do_1_vs_2)
 
         position = position + 1
         ax_output = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_output = Button(ax_output, 'Toggle output (4)')
+        self.b_output = Button(ax_output, 'Toggle output if\n2-row matrix (4)')
         self.b_output.on_clicked(do_toggle_output)
 
         position = position + 1
         ax_circum = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_circum = Button(ax_circum, 'Show circle (c)')
+        self.b_circum = Button(ax_circum, 'Show cirumference\ndots (c)')
         self.b_circum.on_clicked(do_show_circle)
 
         ax_quit = plt.axes([0.75, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_quit = Button(ax_quit, 'Quit (x)')
+        self.b_quit = Button(ax_quit, 'Quit\n(x)')
         self.b_quit.on_clicked(do_quit)
 
 

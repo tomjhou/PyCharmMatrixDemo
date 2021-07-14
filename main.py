@@ -38,6 +38,8 @@ def create_initial_graphics():
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
     plt.title("Matrix (blue/green) and input vector (red)")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
     plt.show(block=False)
 
     linex = np.linspace(-1, 1, 9)
@@ -54,9 +56,10 @@ def create_initial_graphics():
     barlist = plt.bar([0, 1], [0, 0])
     barlist[0].set_color('b')
     barlist[1].set_color('g')
-    plt.xticks([0, 1], ['x', 'y'])
+    plt.xticks([0, 1], ['Matrix row 1 * unit vector', 'Matrix row 2 * unit vector'])
     plt.ylim([-axisLimit, axisLimit])
     plt.title("Output as dot products (blue/green bars)")
+    plt.ylabel("Dot product")
     plt.show(block=False)
 
     # Create bottom-right output plot with dashed circle
@@ -66,6 +69,8 @@ def create_initial_graphics():
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
     plt.title("Output as vector")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
     plt.show(block=False)
 
     # Need this so that background bitmaps will be up to date
