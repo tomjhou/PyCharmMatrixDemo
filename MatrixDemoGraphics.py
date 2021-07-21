@@ -39,7 +39,7 @@ SHADOW1_COLOR = (0, 0, 0.5)
 SHADOW2_COLOR = (0, 0.35, 0)
 
 quitflag = False  # When true, program will exit
-flagAnimate = False  # When true, graph will animate
+flagAnimate = True  # When true, graph will animate
 flagChangeMatrix = False  # When true, will update matrix and redraw
 flagCircum = False  # When true, will plot ring of red/purple dots on circumference
 flagRecalc = False  # When true, will redraw existing graph items
@@ -136,7 +136,7 @@ def on_keypress(event):
     #    print('key: ', event.key, event.xdata, event.ydata)
     if event.key == "x":
         do_quit()
-    if event.key == "a":
+    if event.key == " ":
         do_animate()
     if event.key == "c":
         do_show_circle()
@@ -168,12 +168,26 @@ def fmt_row(r: np.float64):
 class GraphicsObjects:
 
     def __init__(self):
+
+        mpl.use('TkAgg')   # Qt5Agg might also be available, but doesn't seem to behave as nicely
+
+        self.backend = mpl.get_backend()
+        print("Matplotlib backend is: " + self.backend) # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
+
         # Create figure
         fig = plt.figure()
-
         window = plt.get_current_fig_manager().window
         dpi = fig.dpi
-        screen_x, screen_y = window.wm_maxsize()
+
+        if self.backend == "Qt5Agg":
+            # Need a hack to get screen size. Temporarily make a full-screen window, get its size, then later set "real" size
+            window.showMaximized()  # Make window fullscreen
+            plt.pause(.001)  # Draw items to screen so we can get size
+            screen_x, screen_y = fig.get_size_inches() * fig.dpi  # size in pixels
+        else:
+            # window.state('zoomed')  # Make window fullscreen, for TkAgg
+            screen_x, screen_y = window.wm_maxsize() # Get full scren monitor coordinates for TkAgg. Doesn't work under Qt5Agg
+
 #        window.state('zoomed')
         screen_y = screen_y - 50  # Subtract a small amount or else the toolbar at bottom will mess things up.
         fig.set_size_inches(screen_y / dpi, screen_y / dpi)  # Make square window at max size, but bar at bottom messes up size
@@ -199,31 +213,31 @@ class GraphicsObjects:
         # Create one new axis for each new button
         position = 0
         ax_animate = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_animate = Button(ax_animate, 'Toggle animate (a)')
+        self.b_animate = Button(ax_animate, 'Toggle animate\n(space bar)')
         self.b_animate.on_clicked(do_animate)
 
         position = position + 1
         ax_shadow = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_shadow = Button(ax_shadow, 'Toggle shadows (h)')
+        self.b_shadow = Button(ax_shadow, 'Toggle shadows\n(h)')
         self.b_shadow.on_clicked(do_shadow)
 
         position = position + 1
         ax_1_vs_2 = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_1_vs_2 = Button(ax_1_vs_2, '1/2-row matrix (2)')
+        self.b_1_vs_2 = Button(ax_1_vs_2, '1/2-row matrix\n(2)')
         self.b_1_vs_2.on_clicked(do_1_vs_2)
 
         position = position + 1
         ax_output = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_output = Button(ax_output, 'Toggle output (4)')
+        self.b_output = Button(ax_output, 'Toggle output if\n2-row matrix (4)')
         self.b_output.on_clicked(do_toggle_output)
 
         position = position + 1
         ax_circum = plt.axes([0.15 + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_circum = Button(ax_circum, 'Show circle (c)')
+        self.b_circum = Button(ax_circum, 'Show cirumference\ndots (c)')
         self.b_circum.on_clicked(do_show_circle)
 
         ax_quit = plt.axes([0.75, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_quit = Button(ax_quit, 'Quit (x)')
+        self.b_quit = Button(ax_quit, 'Quit\n(x)')
         self.b_quit.on_clicked(do_quit)
 
 

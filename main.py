@@ -15,6 +15,7 @@ import global_vars as gv
 
 # Thickness of matrix, input, and output vectors
 VECTOR_THICKNESS = 30
+ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = True  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
@@ -37,6 +38,8 @@ def create_initial_graphics():
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
     plt.title("Matrix (blue/green) and input vector (red)")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
     plt.show(block=False)
 
     linex = np.linspace(-1, 1, 9)
@@ -53,9 +56,10 @@ def create_initial_graphics():
     barlist = plt.bar([0, 1], [0, 0])
     barlist[0].set_color('b')
     barlist[1].set_color('g')
-    plt.xticks([0, 1], ['x', 'y'])
+    plt.xticks([0, 1], ['Matrix row 1 * unit vector', 'Matrix row 2 * unit vector'])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Dot products (blue/green) = output values")
+    plt.title("Output as dot products (blue/green bars)")
+    plt.ylabel("Dot product")
     plt.show(block=False)
 
     # Create bottom-right output plot with dashed circle
@@ -64,7 +68,9 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output vector")
+    plt.title("Output as vector")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
     plt.show(block=False)
 
     # Need this so that background bitmaps will be up to date
@@ -245,7 +251,7 @@ while mg.quitflag == 0:
     canvas.restore_region(bg1)  # Restores static elements and erases background
     arrowInput.set_positions((0, 0), tuple(vector_input))
 
-    if False:  # mg.flagCircum:
+    if ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES and mg.flagCircum:
         # If showing circumference colors, then make arrows black, which is less distracting
         arrowInput.set_color('k')
         arrowOutput.set_color('k')
