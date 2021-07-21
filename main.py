@@ -15,7 +15,7 @@ import global_vars as gv
 
 # Thickness of matrix, input, and output vectors
 VECTOR_THICKNESS = 30
-ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = True  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
+ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
@@ -37,7 +37,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Matrix (blue/green) and input vector (red)")
+    plt.title("Input vectors\n(can drag blue/green vectors with mouse)")
     plt.xlabel("First dimension")
     plt.ylabel("Second dimension")
     plt.show(block=False)
@@ -58,7 +58,7 @@ def create_initial_graphics():
     barlist[1].set_color('g')
     plt.xticks([0, 1], ['Matrix row 1 * unit vector', 'Matrix row 2 * unit vector'])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output as dot products (blue/green bars)")
+    plt.title("Dot product output(s)")
     plt.ylabel("Dot product")
     plt.show(block=False)
 
@@ -68,7 +68,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output as vector")
+    plt.title("Output vector")
     plt.xlabel("First dimension")
     plt.ylabel("Second dimension")
     plt.show(block=False)
@@ -84,13 +84,12 @@ def create_initial_graphics():
 
 if __name__ == '__main__':
     print('\nMatrix demo instructions:\n\n' +
-          '"a" toggles animation\n' +
-          '"c" toggles circular ring of dots\n' +
-          '"u" normalizes matrix rows to have unit length\n' +
-          '"2" toggles between 1 or 2 matrix rows\n' +
-          '"4" toggles output x-y plot\n' +
-          'Left mouse button drag moves vector1\n' +
-          'Right mouse button drag moves vector2\n' +
+          '"space" toggles animation\n' +
+          '"c" toggles circumference dots\n' +
+          '"h" toggles projection lines\n' +
+          '"u" normalizes input vectors to unit length\n' +
+          '"2" toggles 1 vs 2 matrix rows\n' +
+          'Left mouse button drags vectors\n' +
           '"x" to exit')
 
 # Determine steps between circumference dots
@@ -139,9 +138,7 @@ arrowOutput = mpatches.FancyArrowPatch((0, 0), (0, 0),
                                        mutation_scale=VECTOR_THICKNESS)
 gv.ax1.add_patch(arrowInput)
 ax2.add_patch(arrowOutput)
-if not mg.flagShow4:
-    plt.sca(ax2)
-    plt.axis('off')
+
 
 # Add "shadow" and perpendicular "normal" lines to input axis
 lineNormal = []
@@ -215,7 +212,8 @@ while mg.quitflag == 0:
         # Use rainbow color for text
         gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
     else:
-        gObjects.textObj.update_input_vector(vector_input)
+        # Input text color matches vector
+        gObjects.textObj.update_input_vector(vector_input, mg.INPUT_VECTOR_COLOR)
 
     gObjects.textObj.update_output_vector(vector_output, mg.matrixRowsToShow)
     gObjects.textObj.redraw()
@@ -224,6 +222,7 @@ while mg.quitflag == 0:
     canvas.restore_region(bgBar)  # Restores static elements and erases background
     barlist[0].set_height(vector_output[0])
     axBar.draw_artist(barlist[0])
+
     if mg.matrixRowsToShow > 1:
         barlist[1].set_height(vector_output[1])
         axBar.draw_artist(barlist[1])
@@ -261,10 +260,13 @@ while mg.quitflag == 0:
         arrowOutput.set_color(mg.OUTPUT_VECTOR_COLOR)
 
     if mg.matrixRowsToShow <= 1:
-        # Draw unit arrow and first matrix row, but not second matrix row or circumference dots
+        # 1-D input vector
+        #
+        # Draw unit arrow and blue arrow for first matrix row,
         gv.ax1.draw_artist(matrixArrows[0])
         gv.ax1.draw_artist(arrowInput)
     else:
+        # 2-D input matrix
         if mg.flagCircum:
             # Draw all items including circumference dots
             for p in gv.ax1.patches:
@@ -282,30 +284,34 @@ while mg.quitflag == 0:
             gv.ax1.draw_artist(lineShadow[v])
 
     # Draw bottom-right graph elements, if needed
-    if mg.flagShow4 and mg.matrixRowsToShow > 1:
-        canvas.restore_region(bg2)  # Restores static elements and erases background
+    canvas.restore_region(bg2)  # Restores static elements and erases background
+
+    if mg.matrixRowsToShow > 1:
         arrowOutput.set_positions((0, 0), tuple(vector_output))
-
-        # Draw output vectors
-        if mg.flagShadow:
-            lineOutputX.set_data([0, vector_output[0]], [0, 0])
-            lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
-            ax2.draw_artist(lineOutputX)
-            ax2.draw_artist(lineOutputY)
-
-        # Draw purple circle patches
-        if mg.flagCircum:
-            [ax2.draw_artist(p) for p in ax2.patches]
-        else:
-            ax2.draw_artist(arrowOutput)
-
-        #
-        plt.sca(ax2)
-        plt.axis('on')
     else:
-        ax2.draw_artist(ax2.patch)  # Erase background
-        plt.sca(ax2)
-        plt.axis('off')
+        arrowOutput.set_positions((0, 0), (vector_output[0], 0))
+
+    # Draw output vectors
+    if mg.flagShadow:
+        # [x1, x2], [y1, y2] draws horizontal line
+        lineOutputX.set_data([0, vector_output[0]], [0, 0])
+
+        if  mg.matrixRowsToShow > 1:
+            lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
+        else:
+            lineOutputY.set_data([vector_output[0], vector_output[0]], [0, 0])
+        ax2.draw_artist(lineOutputX)
+        ax2.draw_artist(lineOutputY)
+
+    # Draw purple circle patches
+    if mg.flagCircum & (mg.matrixRowsToShow > 1):
+        [ax2.draw_artist(p) for p in ax2.patches]
+    else:
+        ax2.draw_artist(arrowOutput)
+
+    #
+    plt.sca(ax2)
+    plt.axis('on')
 
     # Render to screen
     canvas.blit(gv.ax1.bbox)
@@ -328,6 +334,25 @@ while mg.quitflag == 0:
             # Global flag just switched on. Copy state to local flag
             localAnimate = True
 
+        if mg.flagMouseDownOnset:
+            # Onset of mouse click
+
+            # Clear flag so we don't come back
+            mg.flagMouseDownOnset = False
+
+            # Determine which row to adjust
+            dx1 = Array1[0,0] - mg.flagX
+            dy1 = Array1[0,1] - mg.flagY
+            dx2 = Array1[1,0] - mg.flagX
+            dy2 = Array1[1,1] - mg.flagY
+
+            if ((dx1*dx1+dy1*dy1) > (dx2*dx2+dy2*dy2)):
+                # Mouse is farther from row 1 vector than 2, so adjust row 2
+                mg.whichRowToAdjust = 1
+            else:
+                # Mouse is farther from row 2 vector than row 1, so adjust row 1
+                mg.whichRowToAdjust = 0
+
         if mg.flagChangeMatrix:
             mg.flagRecalc = False
             mg.flagChangeMatrix = False
@@ -342,6 +367,7 @@ while mg.quitflag == 0:
                     matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
                     matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
                 else:
+                    # User is using mouse to draw matrix vectors
                     Array1[r, 0] = mg.flagX
                     Array1[r, 1] = mg.flagY
                     matrixArrows[r].set_positions((0, 0), tuple(Array1[r, :]))
@@ -355,7 +381,12 @@ while mg.quitflag == 0:
             break
 
         if mg.flagRecalc:
-            mm.flagRecalc = False
+            # If recalc flag is set, then break out of loop and also update text on circumference button
+            gObjects.b_circum.SetVisible(mg.matrixRowsToShow > 1)
+            plt.pause(.001)
+
+            # Clear flag so we don't come back
+            mg.flagRecalc = False
             break
 
         if localAnimate:
