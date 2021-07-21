@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 import colorsys
 
+
 class ChangeType(Enum):
     none = 0
     V1 = 1
@@ -14,10 +15,12 @@ class PlotType(Enum):
     Dot1 = 1
     Dot2 = 2
 
+
 class CircleColorType(Enum):
     Rainbow = 0
     Shaded = 1
     Flat = 2
+
 
 # Create list of points on unit circle corresponding to steps and dots
 class UnitCircleStuff:
@@ -72,6 +75,7 @@ class UnitCircleStuff:
 
             self.stepColorList.append(new_color)
 
+
     # Create NEW list of OUTPUT purple circular patches corresponding to INPUT patches after matrix multiplication
     def makeCircs(self, Array1, outputColor):
         self.patchList2 = []
@@ -83,6 +87,7 @@ class UnitCircleStuff:
             if self.colorType != CircleColorType.Flat:
                 new_color = self.dotColorList[i]
             self.patchList2.append(mpatches.Circle((x2, y2), 0.05, color=new_color))
+
 
     # Update EXISTING list of output patches with new array
     def updateCircs(self, Array1):
