@@ -6,22 +6,31 @@ import numpy as np
 
 import global_vars as gv
 
-USE_SEPARATE_BUTTON_PANEL = True
+USE_SEPARATE_BUTTON_PANEL = True   # Put buttons on separate window
+USE_VERTICAL_BUTTON_PANEL = True   # Stack buttons vertically instead of horizontally
+BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
 
 if (USE_SEPARATE_BUTTON_PANEL):
-    # Button dimensions, which are percentages of window size
-    BUTTON_WIDTH = 0.2
-    BUTTON_HEIGHT = 0.8 # 0.03  # Above about 0.1, buttons disappear - presumably they collide with graphs?
-    BUTTON_SPACING_X = BUTTON_WIDTH + 0.01
-    BUTTON_Y_COORD = 0.1 # 0.95
-    BUTTON_X_START = 0.05
+    # Button dimensions are all expressed as fraction of window size
+    if USE_VERTICAL_BUTTON_PANEL:
+        BUTTON_Y_COORD = 0.8
+        BUTTON_HEIGHT = 0.15
+        BUTTON_WIDTH = 0.8
+        BUTTON_X_START = 0.1
+    else:
+        BUTTON_Y_COORD = 0.1 # 0.95
+        BUTTON_HEIGHT = 0.8 # 0.03  # Above about 0.1, buttons disappear - presumably they collide with graphs?
+        BUTTON_WIDTH = 0.2
+        BUTTON_X_START = 0.05
 else:
-    # Button dimensions, which are percentages of window size
+    # Place buttons at top of plot window. This gives fewer windows, but
+    # causes annoying flicker in plots when mouse cursor moves over button.
+    # Button dimensions are all expressed as fraction of window size
     BUTTON_WIDTH = 0.1
-    BUTTON_HEIGHT = 0.03  # Above about 0.1, buttons disappear - presumably they collide with graphs?
-    BUTTON_SPACING_X = BUTTON_WIDTH + 0.01
-    BUTTON_Y_COORD = 0.95
+    BUTTON_HEIGHT = 0.03  # When > 0.1, buttons disappear - presumably covered by graphs
+    BUTTON_Y_COORD = 0.95 # Buttons are near top of screen
     BUTTON_X_START = 0.15
+
 
 # Font
 FONT_FAMILY = 'monospace'
@@ -160,20 +169,24 @@ def fmt_bracket(n: np.float64):
 def fmt_row(r: np.float64):
     return '[' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
 
-
+# Implements a Button that can be disabled by hiding text
+# I would have preferred to grey it out, but this is much easier to implement
 class Button2(Button):
     """
     """
 
-    def __init__(self, ax, label, image=None,
+    def __init__(self, ax, label, on_clicked_function = None, image=None,
                  color='0.85', hovercolor='0.95'):
         """
         """
         Button.__init__(self, ax, label, image, color, hovercolor)
 
+        if on_clicked_function != None:
+            self.on_clicked(on_clicked_function)
+
         self.label_text = label
 
-    def SetVisible(self, vis):
+    def SetTextVisible(self, vis):
         if vis:
             self.label.set_text(self.label_text)
         else:
@@ -224,59 +237,53 @@ class GraphicsObjects:
         canvas.mpl_connect('button_release_event', on_mouse_release)
         canvas.mpl_connect('motion_notify_event', on_mouse_move)
 
-        # Create figure 2 with control buttons
         if USE_SEPARATE_BUTTON_PANEL:
-            # Move graph window to the right somewhat so that control window will not be obscured
-            canvas.manager.window.wm_geometry("+%d+%d" % (screen_y_adj*.6, 50))
+            # Buttons on plot window cause annoying flicker whenever mouse moves over button
+            # (even if not clicked). Solve this by putting buttons on their own window
 
+            # Create figure 2 with buttons
             fig2 = plt.figure(2)
-            fig2.set_size_inches(screen_y_adj / dpi / 2, screen_y_adj / dpi / 15 )
-            canvas2 = fig2.canvas
-            # Put control window in top left of screen
-            canvas2.manager.window.wm_geometry("+%d+%d" % (25, 25))
-            canvas2.mpl_connect('key_press_event', on_keypress)
 
-        # Test button overlaid on existing graph. Button technically works (responds to mouse clicks),
-        # but keeps getting hidden by plot axes. Is there any way to keep button on top?
-        #
-        # ax_testbutton = self.fig.add_subplot(20, 10, 191)
-        # b_testbutton = Button(ax_testbutton, 'Test')
+            if USE_VERTICAL_BUTTON_PANEL:
+                # Stack buttons in vertical column - need tall narrow window
+                fig2.set_size_inches(screen_y_adj / dpi / 10, screen_y_adj / dpi / 2)
+                # Move plot window to the right to avoid overlapping buttons
+                canvas.manager.window.wm_geometry("+%d+%d" % (screen_y_adj * .3, 0))
+            else:
+                # Make short wide button window
+                fig2.set_size_inches(screen_y_adj / dpi / 2, screen_y_adj / dpi / 15 )
+                # Move plot window to the right to avoid overlapping buttons
+                canvas.manager.window.wm_geometry("+%d+%d" % (screen_y_adj * .6, 0))
 
-        # Creating new axes puts them below main graphs. Is this behavior guaranteed?
+            self.canvas2 = fig2.canvas
+            # Put button window at top left of screen
+            self.canvas2.manager.window.wm_geometry("+%d+%d" % (25, 25))
+            self.canvas2.mpl_connect('key_press_event', on_keypress)
 
-        # Create one new axis for each new button
-        position = 0
-        ax_animate = plt.axes([BUTTON_X_START + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_animate = Button(ax_animate, 'Toggle animate\n(space bar)')
-        self.b_animate.on_clicked(do_animate)
+        self.buttonX = BUTTON_X_START
+        self.buttonY = BUTTON_Y_COORD
 
-        if False:
-            # Don't show this button, as we don't use it much.
-            position = position + 1
-            ax_shadow = plt.axes([BUTTON_X_START + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-            self.b_shadow = Button(ax_shadow, 'Toggle shadows\n(h)')
-            self.b_shadow.on_clicked(do_shadow)
-
-        position = position + 1
-        ax_1_vs_2 = plt.axes([BUTTON_X_START + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_1_vs_2 = Button(ax_1_vs_2, '1/2 row matrix\n (2)')
-        self.b_1_vs_2.on_clicked(do_1_vs_2)
-
-        position = position + 1
-        ax_circum = plt.axes([BUTTON_X_START + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_circum = Button2(ax_circum, 'Circumference\n (c)')
-        self.b_circum.on_clicked(do_show_circle)
-
-        # Would like this to grey out
-        self.b_circum.SetVisible(False)
-
-        position = position + 1
-        ax_quit = plt.axes([BUTTON_X_START + BUTTON_SPACING_X * position, BUTTON_Y_COORD, BUTTON_WIDTH, BUTTON_HEIGHT])
-        self.b_quit = Button(ax_quit, 'Quit\n(x)')
-        self.b_quit.on_clicked(do_quit)
+        # Create row of buttons
+        self.b_animate = Button2(self.next_button_axis(), 'Toggle animate\n(space bar)', do_animate)
+        #self.b_shadow = Button2(self.next_button_axis(), 'Toggle projections\n(h)', do_shadow) # This isn't used much
+        self.b_1_vs_2 = Button2(self.next_button_axis(), 'Toggle 1 vs 2 row matrix\n (2)', do_1_vs_2)
+        self.b_circum = Button2(self.next_button_axis(), 'Toggle Circumference\n (c)', do_show_circle)
+        self.b_circum.SetTextVisible(False) # The toggle-circumference button starts disabled
+        self.b_quit = Button2(self.next_button_axis(), 'Quit\n(x)', do_quit)
 
         plt.figure(1)
 
+    def next_button_axis(self):
+        # Generate axes for the next button in series (either horizontal or vertical row)
+        ax = plt.axes([self.buttonX, self.buttonY, BUTTON_WIDTH, BUTTON_HEIGHT])
+
+        # Increment coordinates in preparation for next call
+        if USE_VERTICAL_BUTTON_PANEL:
+            self.buttonY = self.buttonY - BUTTON_HEIGHT - BUTTON_GAP
+        else:
+            self.buttonX = self.buttonX + BUTTON_GAP
+
+        return ax
 
 class TextObjects:
     def __init__(self, _canvas, _figure):

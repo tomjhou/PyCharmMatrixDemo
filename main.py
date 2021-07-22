@@ -37,7 +37,7 @@ def create_initial_graphics():
     plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
     plt.xlim([-axisLimit, axisLimit])
     plt.ylim([-axisLimit, axisLimit])
-    plt.title("Input vectors\n(can drag blue/green vectors with mouse)")
+    plt.title("Input vectors\n(use mouse to drag vectors)")
     plt.xlabel("First dimension")
     plt.ylabel("Second dimension")
     plt.show(block=False)
@@ -101,6 +101,7 @@ print('Total steps {:d}, circumference dots {:d}'.format(u.numsteps, u.numdots))
 gObjects = mg.GraphicsObjects()
 
 canvas = gObjects.canvas
+canvas_buttons = gObjects.canvas2
 
 # Create plots, and save background bitmaps so we don't have to redraw them over and over.
 # This greatly speeds up animation
@@ -340,18 +341,23 @@ while mg.quitflag == 0:
             # Clear flag so we don't come back
             mg.flagMouseDownOnset = False
 
-            # Determine which row to adjust
-            dx1 = Array1[0,0] - mg.flagX
-            dy1 = Array1[0,1] - mg.flagY
-            dx2 = Array1[1,0] - mg.flagX
-            dy2 = Array1[1,1] - mg.flagY
-
-            if ((dx1*dx1+dy1*dy1) > (dx2*dx2+dy2*dy2)):
-                # Mouse is farther from row 1 vector than 2, so adjust row 2
-                mg.whichRowToAdjust = 1
-            else:
-                # Mouse is farther from row 2 vector than row 1, so adjust row 1
+            if mg.matrixRowsToShow == 1:
+                # Adjust row one, since it's the only one showing
                 mg.whichRowToAdjust = 0
+            else:
+                # Determine which row to adjust by
+                # calculating distance from mouse cursor
+                dx1 = Array1[0,0] - mg.flagX
+                dy1 = Array1[0,1] - mg.flagY
+                dx2 = Array1[1,0] - mg.flagX
+                dy2 = Array1[1,1] - mg.flagY
+
+                if ((dx1*dx1+dy1*dy1) > (dx2*dx2+dy2*dy2)):
+                    # Mouse is farther from row 1 vector than 2, so adjust row 2
+                    mg.whichRowToAdjust = 1
+                else:
+                    # Mouse is farther from row 2 vector than row 1, so adjust row 1
+                    mg.whichRowToAdjust = 0
 
         if mg.flagChangeMatrix:
             mg.flagRecalc = False
@@ -382,8 +388,9 @@ while mg.quitflag == 0:
 
         if mg.flagRecalc:
             # If recalc flag is set, then break out of loop and also update text on circumference button
-            gObjects.b_circum.SetVisible(mg.matrixRowsToShow > 1)
-            plt.pause(.001)
+            gObjects.b_circum.SetTextVisible(mg.matrixRowsToShow > 1)
+            # This is needed for button text to update
+            canvas_buttons.draw()
 
             # Clear flag so we don't come back
             mg.flagRecalc = False
