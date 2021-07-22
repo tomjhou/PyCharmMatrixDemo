@@ -10,7 +10,7 @@ USE_SEPARATE_BUTTON_PANEL = True   # Put buttons on separate window
 USE_VERTICAL_BUTTON_PANEL = True   # Stack buttons vertically instead of horizontally
 BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
 
-if (USE_SEPARATE_BUTTON_PANEL):
+if USE_SEPARATE_BUTTON_PANEL:
     # Button dimensions are all expressed as fraction of window size
     if USE_VERTICAL_BUTTON_PANEL:
         BUTTON_Y_COORD = 0.8
@@ -109,10 +109,8 @@ def on_mouse_move(event):
 
 
 def do_1_vs_2(event=None):
-    global matrixRowsToShow, flagRecalc, flagCircum
+    global matrixRowsToShow, flagRecalc
     matrixRowsToShow = 3 - matrixRowsToShow  # Toggle between 1 and 2 rows
-    if matrixRowsToShow == 1:
-        flagCircum = False
     flagRecalc = True
 
 
@@ -156,11 +154,12 @@ def on_keypress(event):
         do_1_vs_2()
 
 
-# Format a single floating point number to have 3 digits after decimal
+# Format a single floating point number to have 3 decimals
 def fmt(n: np.float64):
     return '{:+2.3f}'.format(n)
 
 
+# Format a single floating point number to have 3 decimals and brackets
 def fmt_bracket(n: np.float64):
     return '[{:+2.3f}]'.format(n)
 
@@ -168,6 +167,7 @@ def fmt_bracket(n: np.float64):
 # Format a 2D vector as text inside brackets
 def fmt_row(r: np.float64):
     return '[' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
+
 
 # Implements a Button that can be disabled by hiding text
 # I would have preferred to grey it out, but this is much easier to implement
@@ -189,8 +189,10 @@ class Button2(Button):
     def SetTextVisible(self, vis):
         if vis:
             self.label.set_text(self.label_text)
+            self.set_active(True)
         else:
             self.label.set_text("---")
+            self.set_active(False)
 
 # Handle buttons and text objects. This does NOT manage the plots.
 # Plots are created after this object's constructor returns, and create_initial_graphs() is called.
@@ -199,16 +201,18 @@ class GraphicsObjects:
     def __init__(self):
         global FONT_SIZE
 
-        mpl.use('TkAgg')   # TkAgg doesn't need installing, and is fast, but has annoying flicker.
-#        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed, has slightly less flicker, but may be slower on some machines.
+#        mpl.use('TkAgg')   # TkAgg doesn't need installing, and is fast, but has annoying flicker.
+        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed, has slightly less flicker, but may be slower on some machines.
 
         self.backend = mpl.get_backend()
         print("Matplotlib backend is: " + self.backend) # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
 
+        mpl.rcParams['toolbar'] = 'None'
+
         # Create figure 1
         fig = plt.figure(1)
         window = plt.get_current_fig_manager().window
-        dpi = fig.dpi
+        self.dpi = fig.dpi
 
         if self.backend == "Qt5Agg":
             # Hack to get screen size. Temporarily make a full-screen window, get size, then later set "real" size
@@ -220,8 +224,8 @@ class GraphicsObjects:
         else:
             print("Unsupported backend " + self.backend)
 
-        screen_y_adj = int(screen_y * .95)  # Subtract a small amount or else the toolbar at bottom will mess things up.
-        fig.set_size_inches(screen_y_adj / dpi, screen_y_adj / dpi)  # Make square window at max size
+        screen_y_adj = int(screen_y * .95)  # Reduce height about 5% so we don't overlap windows taskbar
+        fig.set_size_inches(screen_y_adj / self.dpi, screen_y_adj / self.dpi)  # Make square window at max size
 
         canvas = fig.canvas
 #        canvas.manager.window.wm_geometry("%dx%d" % (screen_y,screen_y))
@@ -246,18 +250,18 @@ class GraphicsObjects:
 
             if USE_VERTICAL_BUTTON_PANEL:
                 # Stack buttons in vertical column - need tall narrow window
-                fig2.set_size_inches(screen_y_adj / dpi / 10, screen_y_adj / dpi / 2)
+                fig2.set_size_inches(screen_y_adj / self.dpi / 5, screen_y_adj / self.dpi / 2)
                 # Move plot window to the right to avoid overlapping buttons
-                canvas.manager.window.wm_geometry("+%d+%d" % (screen_y_adj * .3, 0))
+                self.move_window(canvas, screen_y_adj * .3, 0)
             else:
                 # Make short wide button window
-                fig2.set_size_inches(screen_y_adj / dpi / 2, screen_y_adj / dpi / 15 )
+                fig2.set_size_inches(screen_y_adj / self.dpi / 2, screen_y_adj / self.dpi / 15 )
                 # Move plot window to the right to avoid overlapping buttons
-                canvas.manager.window.wm_geometry("+%d+%d" % (screen_y_adj * .6, 0))
+                self.move_window(canvas, screen_y_adj * .6, 0)
 
             self.canvas2 = fig2.canvas
             # Put button window at top left of screen
-            self.canvas2.manager.window.wm_geometry("+%d+%d" % (25, 25))
+            self.move_window(self.canvas2, 25, 25)
             self.canvas2.mpl_connect('key_press_event', on_keypress)
 
         self.buttonX = BUTTON_X_START
@@ -272,6 +276,18 @@ class GraphicsObjects:
         self.b_quit = Button2(self.next_button_axis(), 'Quit\n(x)', do_quit)
 
         plt.figure(1)
+
+    def move_window(self, canvas, x, y): # x and y are in pixels
+
+        if self.backend == "Qt5Agg":
+            geom = canvas.manager.window.geometry()
+            x1,y1,dx,dy = geom.getRect()
+            canvas.manager.window.setGeometry(x , y + 50, dx, dy)
+        elif self.backend == "TkAgg":
+            canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+        else:
+            print("Unsupported backend " + self.backend)
+
 
     def next_button_axis(self):
         # Generate axes for the next button in series (either horizontal or vertical row)
