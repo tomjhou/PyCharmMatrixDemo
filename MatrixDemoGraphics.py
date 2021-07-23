@@ -1,36 +1,15 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pylab
-from matplotlib.widgets import Button
+
 import numpy as np
 
 import global_vars as gv
 
-USE_SEPARATE_BUTTON_PANEL = True   # Put buttons on separate window
-USE_VERTICAL_BUTTON_PANEL = True   # Stack buttons vertically instead of horizontally
-BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
+import ButtonManager as bm
 
-if USE_SEPARATE_BUTTON_PANEL:
-    # Button dimensions are all expressed as fraction of window size
-    if USE_VERTICAL_BUTTON_PANEL:
-        BUTTON_Y_COORD = 0.8
-        BUTTON_HEIGHT = 0.15
-        BUTTON_WIDTH = 0.8
-        BUTTON_X_START = 0.1
-    else:
-        BUTTON_Y_COORD = 0.1 # 0.95
-        BUTTON_HEIGHT = 0.8 # 0.03  # Above about 0.1, buttons disappear - presumably they collide with graphs?
-        BUTTON_WIDTH = 0.2
-        BUTTON_X_START = 0.05
-else:
-    # Place buttons at top of plot window. This gives fewer windows, but
-    # causes annoying flicker in plots when mouse cursor moves over button.
-    # Button dimensions are all expressed as fraction of window size
-    BUTTON_WIDTH = 0.1
-    BUTTON_HEIGHT = 0.03  # When > 0.1, buttons disappear - presumably covered by graphs
-    BUTTON_Y_COORD = 0.95 # Buttons are near top of screen
-    BUTTON_X_START = 0.15
 
+axisLimit = 2  # Coordinate limits for x-y plots
 
 # Font
 FONT_FAMILY = 'monospace'
@@ -73,6 +52,61 @@ flagX = 0  # Indicates mouse x position
 flagY = 0  # Indicates mouse y position
 matrixRowsToShow = 1
 whichRowToAdjust = 0
+
+
+# Create initial x-y, text, and bar plots, then save backgrounds
+def create_initial_graphics(canvas):
+
+    # Create top-right plot with dashed unit circle
+    th = np.linspace(0, 2 * np.pi, 201)
+    plt.subplot(222)
+    gv.ax1 = plt.gca()
+    plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
+    plt.xlim([-axisLimit, axisLimit])
+    plt.ylim([-axisLimit, axisLimit])
+    plt.title("Input vectors\n(use mouse to drag vectors)")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
+    plt.show(block=False)
+
+    linex = np.linspace(-1, 1, 9)
+    lines = []
+    for i in range(0,9):
+#        plt.plot([-axisLimit, axisLimit], [linex[i], linex[i]], '--', color="grey")
+#        plt.plot([linex[i], linex[i]], [-axisLimit, axisLimit], '--', color="grey")
+        lines.append([(-axisLimit, linex[i]), (axisLimit, linex[i])])
+        lines.append([(linex[i], -axisLimit), (linex[i], axisLimit)])
+
+    # Create bottom-left bar plot
+    plt.subplot(223)
+    gv.axBar = plt.gca()
+    gv.barlist = plt.bar([0, 1], [0, 0])
+    gv.barlist[0].set_color('b')
+    gv.barlist[1].set_color('g')
+    plt.xticks([0, 1], ['Matrix row 1 * unit vector', 'Matrix row 2 * unit vector'])
+    plt.ylim([-axisLimit, axisLimit])
+    plt.title("Dot product output(s)")
+    plt.ylabel("Dot product")
+    plt.show(block=False)
+
+    # Create bottom-right output plot with dashed circle
+    plt.subplot(224)
+    gv.ax2 = plt.gca()
+    plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
+    plt.xlim([-axisLimit, axisLimit])
+    plt.ylim([-axisLimit, axisLimit])
+    plt.title("Output vector")
+    plt.xlabel("First dimension")
+    plt.ylabel("Second dimension")
+    plt.show(block=False)
+
+    # Need this so that background bitmaps will be up to date
+    canvas.draw()
+
+    # Save background bitmaps
+    gv.bgBar = canvas.copy_from_bbox(gv.axBar.bbox)
+    gv.bg1 = canvas.copy_from_bbox(gv.ax1.bbox)
+    gv.bg2 = canvas.copy_from_bbox(gv.ax2.bbox)
 
 
 # Mouse button press. Use this to start moving vector1 or vector2 in top-right plot
@@ -131,8 +165,9 @@ def do_animate(event=None):
 
 
 def do_show_circle(event=None):
-    global flagCircum, flagShow4
+    global flagCircum, flagRecalc
     flagCircum = not flagCircum
+    flagRecalc = True
 
 
 # Keyboard press
@@ -169,142 +204,73 @@ def fmt_row(r: np.float64):
     return '[' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
 
 
-# Implements a Button that can be disabled by hiding text
-# I would have preferred to grey it out, but this is much easier to implement
-class Button2(Button):
-    """
-    """
 
-    def __init__(self, ax, label, on_clicked_function = None, image=None,
-                 color='0.85', hovercolor='0.95'):
-        """
-        """
-        Button.__init__(self, ax, label, image, color, hovercolor)
-
-        if on_clicked_function != None:
-            self.on_clicked(on_clicked_function)
-
-        self.label_text = label
-
-    def SetTextVisible(self, vis):
-        if vis:
-            self.label.set_text(self.label_text)
-            self.set_active(True)
-        else:
-            self.label.set_text("---")
-            self.set_active(False)
-
-# Handle buttons and text objects. This does NOT manage the plots.
-# Plots are created after this object's constructor returns, and create_initial_graphs() is called.
+#
+# Create main windows and canvases for plots and buttons.
+#
+# Actual plots are created after this object's constructor returns, and create_initial_graphs() is called.
 class GraphicsObjects:
 
     def __init__(self):
         global FONT_SIZE
 
-#        mpl.use('TkAgg')   # TkAgg doesn't need installing, and is fast, but has annoying flicker.
-        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed, has slightly less flicker, but may be slower on some machines.
+        mpl.use('TkAgg')   # TkAgg doesn't need installing. Works well.
+#        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed. Has annoying tendency to resize windows after user move
 
         self.backend = mpl.get_backend()
         print("Matplotlib backend is: " + self.backend) # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
 
         mpl.rcParams['toolbar'] = 'None'
 
-        # Create figure 1
-        fig = plt.figure(1)
-        window = plt.get_current_fig_manager().window
-        self.dpi = fig.dpi
+        self.ButtonMgr = bm.ButtonManager()
 
-        if self.backend == "Qt5Agg":
-            # Hack to get screen size. Temporarily make a full-screen window, get size, then later set "real" size
-            window.showMaximized()  # Make fullscreen
-            plt.pause(.001)  # Draw items to screen so we can get size
-            screen_x, screen_y = fig.get_size_inches() * fig.dpi  # size in pixels
-        elif self.backend == "TkAgg":
-            screen_x, screen_y = window.wm_maxsize() # This works for TkAgg, but not Qt5Agg
-        else:
-            print("Unsupported backend " + self.backend)
+        # Create row of buttons. current axis will either be 1 or 2
+        self.b_animate = self.ButtonMgr.add_button('Toggle animate\n(space bar)', do_animate)
+        #self.b_shadow = self.ButtonMgr.add_button('Toggle projections\n(h)', do_shadow) # This isn't used much
+        self.b_1_vs_2 = self.ButtonMgr.add_button('Toggle 1 vs 2 row matrix\n (2)', do_1_vs_2)
+        self.b_circum = self.ButtonMgr.add_button('Toggle Circumference\n (c)', do_show_circle)
+        self.b_quit = self.ButtonMgr.add_button('Quit\n(x)', do_quit)
 
-        screen_y_adj = int(screen_y * .95)  # Reduce height about 5% so we don't overlap windows taskbar
-        fig.set_size_inches(screen_y_adj / self.dpi, screen_y_adj / self.dpi)  # Make square window at max size
+#        self.b_fix = self.ButtonMgr.add_button('Reset size', self.reset_size)
 
-        canvas = fig.canvas
-#        canvas.manager.window.wm_geometry("%dx%d" % (screen_y,screen_y))
-        self.fig = fig
-        self.canvas = canvas
+        # The toggle-circumference button starts disabled
+        self.b_circum.SetTextVisible(False)
+
+        # Make fig 1 the current axis again
+        plt.figure(1)
 
         # Font was optimized for screen height of 1440 pixels. Adjust accordingly if screen is different
-        FONT_SIZE = int(FONT_SIZE * screen_y / 1400)
+        FONT_SIZE = int(FONT_SIZE * self.ButtonMgr.screen_y / 1400)
+
+        fig1 = self.ButtonMgr.fig1
+
         # Create text objects
-        self.textObj = TextObjects(self.canvas, self.fig)
-        canvas.mpl_connect('key_press_event', on_keypress)
-        canvas.mpl_connect('button_press_event', on_mouse_press)
-        canvas.mpl_connect('button_release_event', on_mouse_release)
-        canvas.mpl_connect('motion_notify_event', on_mouse_move)
+        self.textObj = TextObjects(fig1)
 
-        if USE_SEPARATE_BUTTON_PANEL:
-            # Buttons on plot window cause annoying flicker whenever mouse moves over button
-            # (even if not clicked). Solve this by putting buttons on their own window
+        # Main plot windows need to respond to mouse events (for dragging vectors)
+        fig1.canvas.mpl_connect('button_press_event', on_mouse_press)
+        fig1.canvas.mpl_connect('button_release_event', on_mouse_release)
+        fig1.canvas.mpl_connect('motion_notify_event', on_mouse_move)
 
-            # Create figure 2 with buttons
-            fig2 = plt.figure(2)
+        # Windows should respond to key press events
+        fig1.canvas.mpl_connect('key_press_event', on_keypress)
 
-            if USE_VERTICAL_BUTTON_PANEL:
-                # Stack buttons in vertical column - need tall narrow window
-                fig2.set_size_inches(screen_y_adj / self.dpi / 5, screen_y_adj / self.dpi / 2)
-                # Move plot window to the right to avoid overlapping buttons
-                self.move_window(canvas, screen_y_adj * .3, 0)
-            else:
-                # Make short wide button window
-                fig2.set_size_inches(screen_y_adj / self.dpi / 2, screen_y_adj / self.dpi / 15 )
-                # Move plot window to the right to avoid overlapping buttons
-                self.move_window(canvas, screen_y_adj * .6, 0)
-
-            self.canvas2 = fig2.canvas
-            # Put button window at top left of screen
-            self.move_window(self.canvas2, 25, 25)
-            self.canvas2.mpl_connect('key_press_event', on_keypress)
-
-        self.buttonX = BUTTON_X_START
-        self.buttonY = BUTTON_Y_COORD
-
-        # Create row of buttons
-        self.b_animate = Button2(self.next_button_axis(), 'Toggle animate\n(space bar)', do_animate)
-        #self.b_shadow = Button2(self.next_button_axis(), 'Toggle projections\n(h)', do_shadow) # This isn't used much
-        self.b_1_vs_2 = Button2(self.next_button_axis(), 'Toggle 1 vs 2 row matrix\n (2)', do_1_vs_2)
-        self.b_circum = Button2(self.next_button_axis(), 'Toggle Circumference\n (c)', do_show_circle)
-        self.b_circum.SetTextVisible(False) # The toggle-circumference button starts disabled
-        self.b_quit = Button2(self.next_button_axis(), 'Quit\n(x)', do_quit)
+        fig2 = self.ButtonMgr.fig2
+        if fig2 is not None:
+            # Key press events
+            fig2.canvas.mpl_connect('key_press_event', on_keypress)
 
         plt.figure(1)
 
-    def move_window(self, canvas, x, y): # x and y are in pixels
+    def reset_size(self, event):
 
-        if self.backend == "Qt5Agg":
-            geom = canvas.manager.window.geometry()
-            x1,y1,dx,dy = geom.getRect()
-            canvas.manager.window.setGeometry(x , y + 50, dx, dy)
-        elif self.backend == "TkAgg":
-            canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
-        else:
-            print("Unsupported backend " + self.backend)
-
-
-    def next_button_axis(self):
-        # Generate axes for the next button in series (either horizontal or vertical row)
-        ax = plt.axes([self.buttonX, self.buttonY, BUTTON_WIDTH, BUTTON_HEIGHT])
-
-        # Increment coordinates in preparation for next call
-        if USE_VERTICAL_BUTTON_PANEL:
-            self.buttonY = self.buttonY - BUTTON_HEIGHT - BUTTON_GAP
-        else:
-            self.buttonX = self.buttonX + BUTTON_GAP
-
-        return ax
+        self.ButtonMgr.set_fig1_size()
 
 class TextObjects:
-    def __init__(self, _canvas, _figure):
-        self.canvas = _canvas
+    def __init__(self, _figure):
+
         self.fig = _figure
+        self.canvas = _figure.canvas
 
         # Create text plot in top left
         plt.subplot(221)
@@ -312,72 +278,30 @@ class TextObjects:
         plt.axis('off')
 
         # Draw "*" asterisk and "=" equals sign
-        self.ax_text.text(TEXT_STAR_X, TEXT_Y_COORD, '*',
-                          family=FONT_FAMILY,
-                          size=FONT_SIZE
-                          )
-        self.ax_text.text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET, TEXT_Y_COORD - TEXT_IN_OUT_Y_OFFSET, '=',
-                          family=FONT_FAMILY,
-                          size=FONT_SIZE
-                          )
+        self.make_ax_text(TEXT_STAR_X, TEXT_Y_COORD, '*')
+        self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET, TEXT_Y_COORD - TEXT_IN_OUT_Y_OFFSET, '=')
 
-        # Top row of matrix
-        self.textObjArrayRow1 = self.ax_text.text(
-            TEXT_INPUT_MATRIX_X,
-            TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2,
-            '',
-            color=MATRIX_ROW1_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE)
-        # Bottom row of matrix
-        self.textObjArrayRow2 = self.ax_text.text(
-            TEXT_INPUT_MATRIX_X,
-            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2,
-            '',
-            color=MATRIX_ROW2_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE)
-        # Top number in input vector
-        self.textObjInputVector1 = self.ax_text.text(
-            TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
-            TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2,
-            '',
-            color=INPUT_VECTOR_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE
-        )
-        # Bottom number in input vector
-        self.textObjInputVector2 = self.ax_text.text(
-            TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
-            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2,
-            '',
-            color=INPUT_VECTOR_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE
-        )
-        # Top number in output vector
-        self.textObjOutputVectorRow1 = self.ax_text.text(
-            TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
-            TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-            '',
-            color=MATRIX_ROW1_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE
-        )
-        # Bottom number in output vector
-        self.textObjOutputVectorRow2 = self.ax_text.text(
-            TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
-            TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-            '',
-            color=MATRIX_ROW2_COLOR,
-            family=FONT_FAMILY,
-            size=FONT_SIZE
-        )
+        # Top, bottom row of matrix
+        self.textObjArrayRow1 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=MATRIX_ROW1_COLOR)
+        self.textObjArrayRow2 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=MATRIX_ROW2_COLOR)
+
+        # Top, bottom of input vector
+        self.textObjInputVector1 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=INPUT_VECTOR_COLOR)
+        self.textObjInputVector2 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=INPUT_VECTOR_COLOR)
+
+        # Top, bottom of output vector
+        self.textObjOutputVectorRow1 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+            '', color=MATRIX_ROW1_COLOR)
+        self.textObjOutputVectorRow2 = self.ax_text.text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+            '', color=MATRIX_ROW2_COLOR)
 
         self.set_row1_position()
 
         self.canvas.draw()  # Need this so that text will render to screen, before we capture background
         self.background = self.canvas.copy_from_bbox(self.ax_text.bbox)
+
+    def make_ax_text(self, x, y, txt, color=None):
+        return self.ax_text.text(x, y, txt, color=color, family=FONT_FAMILY, size=FONT_SIZE)
 
     # Shift y-coordinates of text so that text always looks centered.
     # Specifically, if showing 2 rows, then top is moved up slightly from center

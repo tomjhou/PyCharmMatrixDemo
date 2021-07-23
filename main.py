@@ -1,7 +1,8 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+#
+#  Matrix demo
+#
+#  Multiplies 2x2 matrix by a rotating unit vector
+#
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -19,68 +20,8 @@ ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  # If true, then arrow color ma
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
-axisLimit = 2  # Coordinate limits for x-y plots
 stepsPerOrbit = 150  # This determines smoothness of animation
 dotsPerOrbit = 40  # Number of circular patches to plot on unit circle
-
-global ax2, axBar, bgBar, bg1, bg2, barlist
-
-
-# Create initial x-y, text, and bar plots, then save backgrounds
-def create_initial_graphics():
-    global ax2, axBar, bgBar, bg1, bg2, barlist
-
-    # Create top-right plot with dashed unit circle
-    th = np.linspace(0, 2 * np.pi, 201)
-    plt.subplot(222)
-    gv.ax1 = plt.gca()
-    plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
-    plt.xlim([-axisLimit, axisLimit])
-    plt.ylim([-axisLimit, axisLimit])
-    plt.title("Input vectors\n(use mouse to drag vectors)")
-    plt.xlabel("First dimension")
-    plt.ylabel("Second dimension")
-    plt.show(block=False)
-
-    linex = np.linspace(-1, 1, 9)
-    lines = []
-    for i in range(0,9):
-#        plt.plot([-axisLimit, axisLimit], [linex[i], linex[i]], '--', color="grey")
-#        plt.plot([linex[i], linex[i]], [-axisLimit, axisLimit], '--', color="grey")
-        lines.append([(-axisLimit, linex[i]), (axisLimit, linex[i])])
-        lines.append([(linex[i], -axisLimit), (linex[i], axisLimit)])
-
-    # Create bottom-left bar plot
-    plt.subplot(223)
-    axBar = plt.gca()
-    barlist = plt.bar([0, 1], [0, 0])
-    barlist[0].set_color('b')
-    barlist[1].set_color('g')
-    plt.xticks([0, 1], ['Matrix row 1 * unit vector', 'Matrix row 2 * unit vector'])
-    plt.ylim([-axisLimit, axisLimit])
-    plt.title("Dot product output(s)")
-    plt.ylabel("Dot product")
-    plt.show(block=False)
-
-    # Create bottom-right output plot with dashed circle
-    plt.subplot(224)
-    ax2 = plt.gca()
-    plt.plot(np.cos(th), np.sin(th), 'k--')  # Make dashed circle
-    plt.xlim([-axisLimit, axisLimit])
-    plt.ylim([-axisLimit, axisLimit])
-    plt.title("Output vector")
-    plt.xlabel("First dimension")
-    plt.ylabel("Second dimension")
-    plt.show(block=False)
-
-    # Need this so that background bitmaps will be up to date
-    canvas.draw()
-
-    # Save background bitmaps
-    bgBar = canvas.copy_from_bbox(axBar.bbox)
-    bg1 = canvas.copy_from_bbox(gv.ax1.bbox)
-    bg2 = canvas.copy_from_bbox(ax2.bbox)
-
 
 if __name__ == '__main__':
     print('\nMatrix demo instructions:\n\n' +
@@ -97,27 +38,27 @@ u = mm.UnitCircleStuff(stepsPerOrbit, dotsPerOrbit, mg.CIRCUMFERENCE_COLOR1, mg.
 stepsPerOrbit = u.numsteps  # This might be changed, to be an integer multiple of dotsPerOrbit
 print('Total steps {:d}, circumference dots {:d}'.format(u.numsteps, u.numdots))
 
-# Create figure
+# Create figure, buttons, and text
 gObjects = mg.GraphicsObjects()
 
-canvas = gObjects.canvas
-canvas_buttons = gObjects.canvas2
+canvas = gObjects.ButtonMgr.fig1.canvas
 
 # Create plots, and save background bitmaps so we don't have to redraw them over and over.
 # This greatly speeds up animation
-create_initial_graphics()
+mg.create_initial_graphics(canvas)
 
 mm.quitflag = False
 
 # Write array values with specified y-coordinate
 gObjects.textObj.update_array_text(Array1)
 
-# Add vector1 (top row of 2x2 array) to top-right graph
+# Add vector1 (top row of 2x2 matrix) to top-right graph
 matrixArrows = [mpatches.FancyArrowPatch((0, 0), tuple(Array1[0, :]),
                                          color=mg.MATRIX_ROW1_COLOR,
                                          mutation_scale=VECTOR_THICKNESS)]   # Thickness
 gv.ax1.add_patch(matrixArrows[0])
-# Add vector2 (bottom row of 2x2 array) to top-right graph
+
+# Add vector2 (bottom row of 2x2 matrix) to top-right graph
 matrixArrows.append(mpatches.FancyArrowPatch((0, 0), tuple(Array1[1, :]),
                                              color=mg.MATRIX_ROW2_COLOR,
                                              mutation_scale=VECTOR_THICKNESS))  # Thickness
@@ -138,8 +79,7 @@ arrowOutput = mpatches.FancyArrowPatch((0, 0), (0, 0),
                                        color=mg.OUTPUT_VECTOR_COLOR,
                                        mutation_scale=VECTOR_THICKNESS)
 gv.ax1.add_patch(arrowInput)
-ax2.add_patch(arrowOutput)
-
+gv.ax2.add_patch(arrowOutput)
 
 # Add "shadow" and perpendicular "normal" lines to input axis
 lineNormal = []
@@ -171,10 +111,10 @@ lineShadow.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
                                          color=mg.SHADOW2_COLOR)))
 
 # Add shadow lines to output axis
-lineOutputX = ax2.add_line(Line2D([0, 0], [1, 1],
+lineOutputX = gv.ax2.add_line(Line2D([0, 0], [1, 1],
                                   linewidth=3,
                                   color=mg.SHADOW1_COLOR))
-lineOutputY = ax2.add_line(Line2D([0, 0], [1, 1],
+lineOutputY = gv.ax2.add_line(Line2D([0, 0], [1, 1],
                                   linewidth=3,
                                   color=mg.SHADOW2_COLOR))
 
@@ -208,7 +148,7 @@ while mg.quitflag == 0:
         shadowYvalues = [0, matrixRowNorm[1] * matrixRowDot]
         lineShadow[v].set_data(shadowXvalues, shadowYvalues)
 
-    # Update input and output vector text
+    # Update input vector text
     if mg.flagCircum:
         # Use rainbow color for text
         gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
@@ -216,22 +156,25 @@ while mg.quitflag == 0:
         # Input text color matches vector
         gObjects.textObj.update_input_vector(vector_input, mg.INPUT_VECTOR_COLOR)
 
+    # Update output vector text
     gObjects.textObj.update_output_vector(vector_output, mg.matrixRowsToShow)
+
+    # Draw text
     gObjects.textObj.redraw()
 
     # Bar chart
-    canvas.restore_region(bgBar)  # Restores static elements and erases background
-    barlist[0].set_height(vector_output[0])
-    axBar.draw_artist(barlist[0])
+    canvas.restore_region(gv.bgBar)  # Restores static elements and erases background
+    gv.barlist[0].set_height(vector_output[0])
+    gv.axBar.draw_artist(gv.barlist[0])
 
     if mg.matrixRowsToShow > 1:
-        barlist[1].set_height(vector_output[1])
-        axBar.draw_artist(barlist[1])
+        gv.barlist[1].set_height(vector_output[1])
+        gv.axBar.draw_artist(gv.barlist[1])
     else:
-        barlist[1].set_height(0)
+        gv.barlist[1].set_height(0)
 
-    # Now render to screen
-    canvas.blit(axBar.bbox)
+    # Now render bar graph to screen
+    canvas.blit(gv.axBar.bbox)
 
     # Draw next circumference dot on input and output x-y plots
     if currentStep % u.stepsPerDot == 0 and cycles == 0:
@@ -244,11 +187,11 @@ while mg.quitflag == 0:
 
         # Add new output dot
         circ = u.patchList2[currentDot]
-        ax2.add_patch(circ)      # This is needed for draw_artist to work. However, patch may now show up extraneously, e.g. when mouse rolls over button
-        ax2.draw_artist(circ)
+        gv.ax2.add_patch(circ)      # This is needed for draw_artist to work. However, patch may now show up extraneously, e.g. when mouse rolls over button
+        gv.ax2.draw_artist(circ)
 
     # Draw top-right "INPUT VECTOR" graph
-    canvas.restore_region(bg1)  # Restores static elements and erases background
+    canvas.restore_region(gv.bg1)  # Restores static elements and erases background
     arrowInput.set_positions((0, 0), tuple(vector_input))
 
     if ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES and mg.flagCircum:
@@ -285,12 +228,14 @@ while mg.quitflag == 0:
             gv.ax1.draw_artist(lineShadow[v])
 
     # Draw bottom-right graph elements, if needed
-    canvas.restore_region(bg2)  # Restores static elements and erases background
+    canvas.restore_region(gv.bg2)  # Restores static elements and erases background
 
     if mg.matrixRowsToShow > 1:
         arrowOutput.set_positions((0, 0), tuple(vector_output))
     else:
+        # Output (purple) arrow is horizontal
         arrowOutput.set_positions((0, 0), (vector_output[0], 0))
+        arrowOutput.set_arrowstyle("simple", head_length=min(np.abs(vector_output[0]),0.5))
 
     # Draw output vectors
     if mg.flagShadow:
@@ -301,22 +246,22 @@ while mg.quitflag == 0:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
         else:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, 0])
-        ax2.draw_artist(lineOutputX)
-        ax2.draw_artist(lineOutputY)
+        gv.ax2.draw_artist(lineOutputX)
+        gv.ax2.draw_artist(lineOutputY)
 
     # Draw purple circle patches
     if mg.flagCircum & (mg.matrixRowsToShow > 1):
-        [ax2.draw_artist(p) for p in ax2.patches]
+        [gv.ax2.draw_artist(p) for p in gv.ax2.patches]
     else:
-        ax2.draw_artist(arrowOutput)
+        gv.ax2.draw_artist(arrowOutput)
 
     #
-    plt.sca(ax2)
+    plt.sca(gv.ax2)
     plt.axis('on')
 
     # Render to screen
     canvas.blit(gv.ax1.bbox)
-    canvas.blit(ax2.bbox)
+    canvas.blit(gv.ax2.bbox)
 
     if localRedrawAxes:
         plt.pause(0.01) # Need this to redraw entire plot axis when output panel (lower right) is togged on/off
@@ -390,7 +335,7 @@ while mg.quitflag == 0:
             # If recalc flag is set, then break out of loop and also update text on circumference button
             gObjects.b_circum.SetTextVisible(mg.matrixRowsToShow > 1)
             # This is needed for button text to update
-            canvas_buttons.draw()
+            gObjects.ButtonMgr.fig2.canvas.draw()
 
             # Clear flag so we don't come back
             mg.flagRecalc = False
