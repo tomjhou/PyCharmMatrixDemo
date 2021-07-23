@@ -292,7 +292,7 @@ class TextObjects:
         # Top, bottom of output vector
         self.textObjOutputVectorRow1 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
             '', color=MATRIX_ROW1_COLOR)
-        self.textObjOutputVectorRow2 = self.ax_text.text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+        self.textObjOutputVectorRow2 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
             '', color=MATRIX_ROW2_COLOR)
 
         self.set_row1_position()

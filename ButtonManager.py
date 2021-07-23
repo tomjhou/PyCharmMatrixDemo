@@ -133,7 +133,7 @@ class Button2(Button):
         """
         Button.__init__(self, ax, label, image, color, hovercolor)
 
-        if on_clicked_function != None:
+        if on_clicked_function is not None:
             self.on_clicked(on_clicked_function)
 
         self.label_text = label
