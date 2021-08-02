@@ -17,6 +17,7 @@ import global_vars as gv
 # Thickness of matrix, input, and output vectors
 VECTOR_THICKNESS = 30
 ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
+TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  #  If true, then text color matches the color of circumference circles. Otherwise, remains default red/purple
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
@@ -151,7 +152,10 @@ while mg.quitflag == 0:
     # Update input vector text
     if mg.flagCircum:
         # Use rainbow color for text
-        gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
+        if TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES:
+            gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
+        else:
+            gObjects.textObj.update_input_vector(vector_input, mg.INPUT_VECTOR_COLOR)
     else:
         # Input text color matches vector
         gObjects.textObj.update_input_vector(vector_input, mg.INPUT_VECTOR_COLOR)
@@ -232,10 +236,11 @@ while mg.quitflag == 0:
 
     if mg.matrixRowsToShow > 1:
         arrowOutput.set_positions((0, 0), tuple(vector_output))
+        arrowOutput.set_arrowstyle("simple", head_length=min(sum([abs(x) for x in vector_output]),0.5))
     else:
         # Output (purple) arrow is horizontal
         arrowOutput.set_positions((0, 0), (vector_output[0], 0))
-        arrowOutput.set_arrowstyle("simple", head_length=min(np.abs(vector_output[0]),0.5))
+        arrowOutput.set_arrowstyle("simple", head_length=min(abs(vector_output[0]),0.5))
 
     # Draw output vectors
     if mg.flagShadow:

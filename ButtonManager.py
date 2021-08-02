@@ -6,24 +6,17 @@ from matplotlib.widgets import Button
 
 class ButtonManager:
 
-    def __init__(self, _is_vertical = True, _is_separate = True):
+    def __init__(self, _is_separate = True):
 
         self.USE_SEPARATE_BUTTON_PANEL = _is_separate   # Put buttons on separate window
-        self.USE_VERTICAL_BUTTON_PANEL = _is_vertical   # Stack buttons vertically instead of horizontally
         self.BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
 
         if self.USE_SEPARATE_BUTTON_PANEL:
             # Button dimensions are all expressed as fraction of window size
-            if self.USE_VERTICAL_BUTTON_PANEL:
-                self.BUTTON_Y_COORD = 0.8
-                self.BUTTON_HEIGHT = 0.15
-                self.BUTTON_WIDTH = 0.8
-                self.BUTTON_X_START = 0.1
-            else:
-                self.BUTTON_Y_COORD = 0.1  # 0.95
-                self.BUTTON_HEIGHT = 0.8   # 0.03  # Above about 0.1, buttons disappear - presumably they collide with graphs?
-                self.BUTTON_WIDTH = 0.2
-                self.BUTTON_X_START = 0.05
+            self.BUTTON_Y_COORD = 0.8
+            self.BUTTON_HEIGHT = 0.15
+            self.BUTTON_WIDTH = 0.8
+            self.BUTTON_X_START = 0.1
         else:
             # Place buttons at top of plot window. This gives fewer windows, but
             # causes annoying flicker in plots when mouse cursor moves over button.
@@ -65,25 +58,25 @@ class ButtonManager:
             # Buttons on plot window cause annoying flicker whenever mouse moves over button
             # (even if not clicked). Solve this by putting buttons on their own window
 
-            # Create figure 2 with buttons
+            # Create figure 2, which will contain all the control buttons
             self.fig2 = plt.figure(2)
 
             screen_y_adj = int(self.screen_y * .95)  # Reduce height about 5% so we don't overlap windows taskbar
 
-            if self.USE_VERTICAL_BUTTON_PANEL:
-                # Stack buttons in vertical column - need tall narrow window
-                self.fig2.set_size_inches(screen_y_adj / self.dpi / 5, screen_y_adj / self.dpi / 2)
-                # Move plot window to the right to avoid overlapping buttons
-                self.move_window(self.canvas1, screen_y_adj * .3, 0)
-            else:
-                # Make short wide button window
-                self.fig2.set_size_inches(screen_y_adj / self.dpi / 2, screen_y_adj / self.dpi / 15 )
-                # Move plot window to the right to avoid overlapping buttons
-                self.move_window(self.canvas1, screen_y_adj * .6, 0)
+            menu_x_pixels = screen_y_adj / 5
+            menu_y_pixels = screen_y_adj / 2
+            if menu_x_pixels < 250:
+                menu_x_pixels = 250
+
+            # Stack buttons in vertical column - need tall narrow window
+            self.fig2.set_size_inches(menu_x_pixels / self.dpi, menu_y_pixels / self.dpi)
 
             self.canvas2 = self.fig2.canvas
+
             # Put button window at top left of screen
-            self.move_window(self.canvas2, 25, 25)
+            self.move_window(self.canvas2, 10, 10)
+            # Move plot window to the right to avoid overlapping buttons
+            self.move_window(self.canvas1, menu_x_pixels + 20, 0)
 
     def set_fig1_size(self):
 
@@ -101,10 +94,7 @@ class ButtonManager:
         ax = plt.axes([self.buttonX, self.buttonY, self.BUTTON_WIDTH, self.BUTTON_HEIGHT])
 
         # Increment coordinates in preparation for next call
-        if self.USE_VERTICAL_BUTTON_PANEL:
-            self.buttonY = self.buttonY - self.BUTTON_HEIGHT - self.BUTTON_GAP
-        else:
-            self.buttonX = self.buttonX + self.BUTTON_WIDTH + self.BUTTON_GAP
+        self.buttonY = self.buttonY - self.BUTTON_HEIGHT - self.BUTTON_GAP
 
         return ax
 

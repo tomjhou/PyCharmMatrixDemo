@@ -8,7 +8,6 @@ import global_vars as gv
 
 import ButtonManager as bm
 
-
 axisLimit = 2  # Coordinate limits for x-y plots
 
 # Font
@@ -25,9 +24,9 @@ TEXT_IN_OUT_X_OFFSET = 0.27  # Horizontal space between input and output text
 # Text coordinates, vertical
 TEXT_Y_COORD = 0.7  # Height of input matrix text above horizontal axis
 TEXT_MATRIX_ROW_Y_SPACING = 0.08  # Vertical space between rows of input matrix
-TEXT_IN_OUT_Y_OFFSET = 0     # Vertical space between input and output matrices
+TEXT_IN_OUT_Y_OFFSET = 0  # Vertical space between input and output matrices
 
-INPUT_VECTOR_COLOR  = (1.0, 0, 0.0)  # Red (0, 0, 0)  # Black
+INPUT_VECTOR_COLOR = (1.0, 0, 0.0)  # Red (0, 0, 0)  # Black
 OUTPUT_VECTOR_COLOR = (0.5, 0, 0.5)  # Dark purple
 
 CIRCUMFERENCE_COLOR1 = (0.0, 0.0, 0.0)  # Black
@@ -56,7 +55,6 @@ whichRowToAdjust = 0
 
 # Create initial x-y, text, and bar plots, then save backgrounds
 def create_initial_graphics(canvas):
-
     # Create top-right plot with dashed unit circle
     th = np.linspace(0, 2 * np.pi, 201)
     plt.subplot(222)
@@ -71,9 +69,9 @@ def create_initial_graphics(canvas):
 
     linex = np.linspace(-1, 1, 9)
     lines = []
-    for i in range(0,9):
-#        plt.plot([-axisLimit, axisLimit], [linex[i], linex[i]], '--', color="grey")
-#        plt.plot([linex[i], linex[i]], [-axisLimit, axisLimit], '--', color="grey")
+    for i in range(0, 9):
+        #        plt.plot([-axisLimit, axisLimit], [linex[i], linex[i]], '--', color="grey")
+        #        plt.plot([linex[i], linex[i]], [-axisLimit, axisLimit], '--', color="grey")
         lines.append([(-axisLimit, linex[i]), (axisLimit, linex[i])])
         lines.append([(linex[i], -axisLimit), (linex[i], axisLimit)])
 
@@ -204,7 +202,6 @@ def fmt_row(r: np.float64):
     return '[' + fmt(r[0]) + ', ' + fmt(r[1]) + ']'
 
 
-
 #
 # Create main windows and canvases for plots and buttons.
 #
@@ -214,11 +211,12 @@ class GraphicsObjects:
     def __init__(self):
         global FONT_SIZE
 
-        mpl.use('TkAgg')   # TkAgg doesn't need installing. Works well.
-#        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed. Has annoying tendency to resize windows after user move
+        mpl.use('TkAgg')  # TkAgg doesn't need installing. Works well.
+        #        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed. Has annoying tendency to resize windows after user move
 
         self.backend = mpl.get_backend()
-        print("Matplotlib backend is: " + self.backend) # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
+        print(
+            "Matplotlib backend is: " + self.backend)  # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
 
         mpl.rcParams['toolbar'] = 'None'
 
@@ -226,12 +224,12 @@ class GraphicsObjects:
 
         # Create row of buttons. current axis will either be 1 or 2
         self.b_animate = self.ButtonMgr.add_button('Toggle animate\n(space bar)', do_animate)
-        #self.b_shadow = self.ButtonMgr.add_button('Toggle projections\n(h)', do_shadow) # This isn't used much
+        # self.b_shadow = self.ButtonMgr.add_button('Toggle projections\n(h)', do_shadow) # This isn't used much
         self.b_1_vs_2 = self.ButtonMgr.add_button('Toggle 1 vs 2 row matrix\n (2)', do_1_vs_2)
         self.b_circum = self.ButtonMgr.add_button('Toggle Circumference\n (c)', do_show_circle)
         self.b_quit = self.ButtonMgr.add_button('Quit\n(x)', do_quit)
 
-#        self.b_fix = self.ButtonMgr.add_button('Reset size', self.reset_size)
+        #        self.b_fix = self.ButtonMgr.add_button('Reset size', self.reset_size)
 
         # The toggle-circumference button starts disabled
         self.b_circum.SetTextVisible(False)
@@ -263,8 +261,8 @@ class GraphicsObjects:
         plt.figure(1)
 
     def reset_size(self, event):
-
         self.ButtonMgr.set_fig1_size()
+
 
 class TextObjects:
     def __init__(self, _figure):
@@ -282,18 +280,26 @@ class TextObjects:
         self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET, TEXT_Y_COORD - TEXT_IN_OUT_Y_OFFSET, '=')
 
         # Top, bottom row of matrix
-        self.textObjArrayRow1 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=MATRIX_ROW1_COLOR)
-        self.textObjArrayRow2 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=MATRIX_ROW2_COLOR)
+        self.textObjArrayRow1 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '',
+                                                  color=MATRIX_ROW1_COLOR)
+        self.textObjArrayRow2 = self.make_ax_text(TEXT_INPUT_MATRIX_X, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '',
+                                                  color=MATRIX_ROW2_COLOR)
 
         # Top, bottom of input vector
-        self.textObjInputVector1 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=INPUT_VECTOR_COLOR)
-        self.textObjInputVector2 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '', color=INPUT_VECTOR_COLOR)
+        self.textObjInputVector1 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
+                                                     TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2, '',
+                                                     color=INPUT_VECTOR_COLOR)
+        self.textObjInputVector2 = self.make_ax_text(TEXT_STAR_X + TEXT_OPERATOR_X_SPACING,
+                                                     TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2, '',
+                                                     color=INPUT_VECTOR_COLOR)
 
-        # Top, bottom of output vector
-        self.textObjOutputVectorRow1 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-            '', color=MATRIX_ROW1_COLOR)
-        self.textObjOutputVectorRow2 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING, TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-            '', color=MATRIX_ROW2_COLOR)
+        # Top, bottom of output vector. Color is set later?
+        self.textObjOutputVectorRow1 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+                                                         TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+                                                         '')
+        self.textObjOutputVectorRow2 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+                                                         TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+                                                         '')
 
         self.set_row1_position()
 
@@ -330,10 +336,10 @@ class TextObjects:
     def update_output_vector(self, vector, elements, new_color=OUTPUT_VECTOR_COLOR):
         self.set_row1_position()
         self.textObjOutputVectorRow1.set_text(fmt_bracket(vector[0]))
-        self.textObjOutputVectorRow1.set_color(MATRIX_ROW1_COLOR)
+        self.textObjOutputVectorRow1.set_color(OUTPUT_VECTOR_COLOR)  # MATRIX_ROW1_COLOR)
         if elements > 1:
             self.textObjOutputVectorRow2.set_text(fmt_bracket(vector[1]))
-            self.textObjOutputVectorRow2.set_color(MATRIX_ROW2_COLOR)
+            self.textObjOutputVectorRow2.set_color(OUTPUT_VECTOR_COLOR)  # MATRIX_ROW2_COLOR)
 
     def redraw(self):
         #   axText.draw_artist(axText.patch)  # Erase background
