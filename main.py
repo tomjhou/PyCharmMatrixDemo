@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import numpy as np
+import time
 
 # My files
 import matrix_demo_math as mm
@@ -21,7 +22,7 @@ TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  #  If true, then text color mat
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
-stepsPerOrbit = 150  # This determines smoothness of animation
+stepsPerOrbit = 400  # This determines smoothness of animation
 dotsPerOrbit = 40  # Number of circular patches to plot on unit circle
 
 # Determine steps between circumference dots
@@ -32,7 +33,7 @@ print('Total steps {:d}, circumference dots {:d}'.format(u.numsteps, u.numdots))
 # Create figure, buttons, and text
 gObjects = mg.GraphicsObjects()
 
-canvas = gObjects.ButtonMgr.fig1.canvas
+canvas = gObjects.fig1.canvas
 
 # Create plots, and save background bitmaps so we don't have to redraw them over and over.
 # This greatly speeds up animation
@@ -59,6 +60,7 @@ gv.ax1.add_patch(matrixArrows[1])
 u.makeCircs(Array1, mg.OUTPUT_VECTOR_COLOR)
 
 currentStep = 0
+currentStepFloat = 0.0
 start = True
 cycles = 0
 
@@ -217,7 +219,7 @@ while mg.settings.quitflag == 0:
 
     if mg.settings.flagShadow:
         # Draw "shadow" projections
-        for v in range(0,mg.settings.matrixRowsToShow):
+        for v in range(0, mg.settings.matrixRowsToShow):
             gv.ax1.draw_artist(lineNormal[v])
             gv.ax1.draw_artist(lineShadow[v])
 
@@ -279,7 +281,7 @@ while mg.settings.quitflag == 0:
             # Onset of mouse click
 
             # Clear flag so we don't come back
-            mg.flagMouseDownOnset = False
+            mg.settings.flagMouseDownOnset = False
 
             if mg.settings.matrixRowsToShow == 1:
                 # Adjust row one, since it's the only one showing
@@ -300,14 +302,14 @@ while mg.settings.quitflag == 0:
                     mg.settings.whichRowToAdjust = 0
 
         if mg.settings.flagChangeMatrix:
-            mg.flagRecalc = False
-            mg.flagChangeMatrix = False
+            mg.settings.flagRecalc = False
+            mg.settings.flagChangeMatrix = False
             r = mg.settings.whichRowToAdjust
             if r == -1:
-                # Force orthogonal
+                # Force row1 to be orthogonal to row0
                 Array1[1, 0] = -Array1[0, 1]
                 Array1[1, 1] = Array1[0, 0]
-                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
+#                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
                 matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
             elif r == -2:
                 # Force unit vector ... currently not used, but can resurrect
@@ -324,10 +326,13 @@ while mg.settings.quitflag == 0:
                 Array1[r, 0] = mg.settings.flagX
                 Array1[r, 1] = mg.settings.flagY
 
-                if mg.settings.keep_ortho and r == 0:
-                    Array1[1, 0] = -Array1[0, 1]
-                    Array1[1, 1] = Array1[0, 0]
-                    matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
+                if mg.settings.keep_ortho:
+                    # Force other arrow to be 90 degrees counterclockwise from the one being adjusted
+                    target = 1 - r
+                    Array1[target, 0] = -Array1[r, 1]
+                    Array1[target, 1] = Array1[r, 0]
+                    matrixArrows[target].set_positions((0, 0), tuple(Array1[target, :]))
+
                 matrixArrows[r].set_positions((0, 0), tuple(Array1[r, :]))
             else:
                 # Nothing was changed after all.
@@ -339,29 +344,23 @@ while mg.settings.quitflag == 0:
             break
 
         if mg.settings.flagRedrawAxes:
-            mg.flagRedrawAxes = False
+            mg.settings.flagRedrawAxes = False
             localRedrawAxes = True
             break
 
         if mg.settings.flagRecalc:
             # If recalc flag is set, then break out of loop and also update text on circumference button
-            if gObjects.ButtonMgr.USE_TK:
-                if mg.settings.matrixRowsToShow > 1:
-                    gObjects.b_circum.state(["!disabled"])
-                else:
-                    gObjects.b_circum.state(["disabled"])
+            if mg.settings.matrixRowsToShow > 1:
+                gObjects.b_circum.state(["!disabled"])
             else:
-                gObjects.b_circum.SetTextVisible(mg.settings.matrixRowsToShow > 1)
-
-            if not gObjects.ButtonMgr.USE_TK:
-                # This is needed for button text to update
-                gObjects.ButtonMgr.fig2.canvas.draw()
+                gObjects.b_circum.state(["disabled"])
 
             # Clear flag so we don't come back
-            mg.flagRecalc = False
+            mg.settings.flagRecalc = False
             break
 
         if localAnimate:
+
             break
 
 
@@ -369,10 +368,13 @@ while mg.settings.quitflag == 0:
         break
 
     if mg.settings.flagAnimate:
-        currentStep = currentStep + 1
-        if currentStep >= u.numsteps:
+        currentStepFloat = currentStepFloat + gObjects.animation_speed / 25
+
+        if currentStepFloat >= u.numsteps:
             cycles = cycles + 1
-            currentStep = currentStep - stepsPerOrbit
+            currentStepFloat = currentStepFloat - stepsPerOrbit
+
+        currentStep = int(currentStepFloat)
 
 if mg.settings.quitflag == 0:
     plt.show()  # This will block until window is closed.

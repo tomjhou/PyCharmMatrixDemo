@@ -2,13 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import pylab
-
 import numpy as np
 
 import global_vars as gv
-
-import button_manager as bm
 
 axisLimit = 2  # Coordinate limits for x-y plots
 
@@ -40,7 +36,8 @@ MATRIX_ROW2_COLOR = (0.25, 0.75, 0.25)  # Light green
 SHADOW1_COLOR = (0, 0, 0.5)
 SHADOW2_COLOR = (0, 0.35, 0)
 
-class Settings():
+
+class Settings:
 
     def __init__(self):
         self.quitflag = False  # When true, program will exit
@@ -58,7 +55,9 @@ class Settings():
         self.whichRowToAdjust = 0
         self.keep_ortho = 0
 
+
 settings = Settings()
+
 
 # Create initial x-y, text, and bar plots, then save backgrounds
 def create_initial_graphics(canvas):
@@ -146,33 +145,22 @@ def on_mouse_move(event):
         settings.flagChangeMatrix = True
 
 
-def do_1_vs_2(event=None):
-    settings.matrixRowsToShow = 3 - settings.matrixRowsToShow  # Toggle between 1 and 2 rows
-    settings.flagRecalc = True
-
-
-def do_shadow(event=None):
+def do_shadow(_event=None):
     settings.flagShadow = 1 - settings.flagShadow
     settings.flagRecalc = True
 
 
-def do_quit(event=None):
+def do_quit(_event=None):
     settings.quitflag = True
 
 
-def do_animate(event=None):
+def do_animate(_event=None):
     settings.flagAnimate = not settings.flagAnimate
 
 
 def do_show_circle(_event=None):
     settings.flagCircum = not settings.flagCircum
     settings.flagRecalc = True
-
-
-# This is only called if using matplotlib buttons. For tk buttons, see method within GraphicsObjects
-def do_orthogonal(_event=None):
-    settings.flagChangeMatrix = True
-    settings.whichRowToAdjust = -1
 
 
 def on_keydown(e):
@@ -213,79 +201,118 @@ class GraphicsObjects:
     def __init__(self):
         global FONT_SIZE
 
+        self.animation_speed = 50
+
         mpl.use('TkAgg')  # TkAgg doesn't need installing. Works well.
-        #        mpl.use('Qt5Agg')  # Qt5Agg needs to be installed. Has annoying tendency to resize windows after user move
 
-        self.backend = mpl.get_backend()
-        print(
-            "Matplotlib backend is: " + self.backend)  # Returns Qt5Agg after installing Qt5 ... if you don't have Qt5, I think it returns TkAgg something
-
+        # Gets rid of toolbar under plot
         mpl.rcParams['toolbar'] = 'None'
 
-        self.ButtonMgr = bm.ButtonManager()
+        root = tk.Tk()
+        self.root = root
+        root.title(string="Choose")
+        self.frame1 = tk.Frame(root, highlightbackground="black", highlightthickness=1, relief="flat", borderwidth=5)
+        self.frame1.pack(side=tk.TOP, fill=tk.BOTH, ipadx=5, ipady=5, padx=20, pady=20)
+        root.geometry("+%d+%d" % (5, 5))
+
+        # Create figure 1 for main plots
+        self.fig1 = plt.figure(1)
+        self.dpi = self.fig1.dpi
+
+        self.screen_y = root.winfo_screenheight()
+        self.reset_size()
+        self.canvas1 = self.fig1.canvas
+
+        self.label_speed = ttk.Label(self.frame1, text="Animation speed =", anchor=tk.CENTER)
+        self.label_speed.pack(fill=tk.X)
+        self.speed_var = tk.IntVar(root)
+        self.slider1 = ttk.Scale(self.frame1, from_=0, to=100, command=self.do_speed_slider)  # , variable=self.speed_var)
+#        self.slider1.bind("<ButtonRelease-1>", self.do_speed_slider_button_release)
+        self.slider1.pack(fill=tk.X)
+        # Set initial value
+#        self.speed_var.set(self.animation_speed)
+        self.slider1.set(self.animation_speed)
 
         # Create row of buttons. current axis will either be 1 or 2
-        self.b_animate = self.ButtonMgr.add_button('Toggle animate', do_animate)
+        self.b_animate = self.add_button('Toggle animate', do_animate)
         # self.b_shadow = self.ButtonMgr.add_button('Toggle projections\n(h)', do_shadow) # This isn't used much
-        self.b_1_vs_2 = self.ButtonMgr.add_button('Toggle 1 vs 2 row matrix', do_1_vs_2)
-        self.b_circum = self.ButtonMgr.add_button('Toggle Circumference', do_show_circle)
+        self.b_1_vs_2 = self.add_button('Toggle 1 vs 2 row matrix', self.do_1_vs_2)
+        self.b_circum = self.add_button('Toggle Circumference', do_show_circle)
 
-        if self.ButtonMgr.USE_TK:
-            self.var_ortho = tk.IntVar()
-            self.b_orthogonal = self.ButtonMgr.add_check('Keep orthogonal', self.var_ortho, self.do_orthogonal_tk)
-        else:
-            self.b_orthogonal = self.ButtonMgr.add_button('Make orthogonal', do_orthogonal)
+        self.var_ortho = tk.IntVar()
+        self.b_orthogonal = self.add_check('Keep orthogonal', self.var_ortho, self.do_orthogonal_tk)
 
-        self.b_quit = self.ButtonMgr.add_button('Quit', do_quit)
-
-        #        self.b_fix = self.ButtonMgr.add_button('Reset size', self.reset_size)
-
-        # The toggle-circumference button starts disabled
-        if self.ButtonMgr.USE_TK:
-            self.b_circum.state(["disabled"])
-            self.var_ortho.set(0)
-        else:
-            self.b_circum.SetTextVisible(False)
-
-        # Make fig 1 the current axis again
-        plt.figure(1)
+        self.b_quit = self.add_button('Quit', do_quit)
 
         # Font was optimized for screen height of 1440 pixels. Adjust accordingly if screen is different
-        FONT_SIZE = int(FONT_SIZE * self.ButtonMgr.screen_y / 1400)
-
-        fig1 = self.ButtonMgr.fig1
+        FONT_SIZE = int(FONT_SIZE * self.screen_y / 1400)
 
         # Create text objects
-        self.textObj = TextObjects(fig1)
+        self.textObj = TextObjects(self.fig1)
 
         # Main plot windows need to respond to mouse events (for dragging vectors)
-        fig1.canvas.mpl_connect('button_press_event', on_mouse_press)
-        fig1.canvas.mpl_connect('button_release_event', on_mouse_release)
-        fig1.canvas.mpl_connect('motion_notify_event', on_mouse_move)
+        self.canvas1.mpl_connect('button_press_event', on_mouse_press)
+        self.canvas1.mpl_connect('button_release_event', on_mouse_release)
+        self.canvas1.mpl_connect('motion_notify_event', on_mouse_move)
 
         # Windows should respond to key press events
-        fig1.canvas.mpl_connect('key_press_event', on_keypress)
+        self.canvas1.mpl_connect('key_press_event', on_keypress)
 
-        if self.ButtonMgr.USE_TK:
-            self.ButtonMgr.root.bind("<KeyPress>", on_keydown)
-        else:
-            fig2 = self.ButtonMgr.fig2
-            if fig2 is not None:
-                # Key press events
-                fig2.canvas.mpl_connect('key_press_event', on_keypress)
+        # Menu window should respond to key press events too
+        root.bind("<KeyPress>", on_keydown)
+
+        # Move plot window so it doesn't overlap menu buttons
+        self.move_window_aside_menu()
+
+        # Initial states
+        self.b_circum.state(["disabled"])
+        self.var_ortho.set(0)
+        self.b_orthogonal.config(state=tk.DISABLED)
 
         plt.figure(1)
 
-    def reset_size(self, event):
-        self.ButtonMgr.set_fig1_size()
+    def add_button(self, text, func):
+        b = ttk.Button(self.frame1, text=text, command=func)
+        b.pack(fill=tk.X, ipadx=10, ipady=10, padx=10, pady=5)
+        return b
+
+    def add_check(self, text, var_int, func):
+        b = ttk.Checkbutton(self.frame1, text=text, variable=var_int, command=func)
+        b.pack(ipadx=10, ipady=10, padx=10, pady=5)
+        return b
+
+    def move_window_aside_menu(self):
+        self.canvas1.manager.window.wm_geometry("+%d+%d" % (self.root.winfo_rootx() + self.root.winfo_width() + 5, 0))
 
     def do_orthogonal_tk(self):
-        # This will handle transient change
+        # This will handle transient change when user checks/unchecks box
         settings.flagChangeMatrix = self.var_ortho.get()
 
         # This will keep permanent toggle, so that future changes to row0 are reflected in row1
         settings.keep_ortho = self.var_ortho.get()
         settings.whichRowToAdjust = -1
+
+    def do_speed_slider(self, val):
+        # We come here when user moves slider ... generates lots of intermediate callbacks
+        int_val = int(float(val))
+        self.animation_speed = int_val
+        self.label_speed['text'] = "Animation speed = " + str(int_val) + "%"
+
+    def do_1_vs_2(self):
+        settings.matrixRowsToShow = 3 - settings.matrixRowsToShow  # Toggle between 1 and 2 rows
+        settings.flagRecalc = True
+        if settings.matrixRowsToShow > 1:
+            self.b_circum.state(["!disabled"])
+            self.b_orthogonal.config(state=tk.NORMAL)
+        else:
+            self.b_circum.state(["disabled"])
+            self.b_orthogonal.config(state=tk.DISABLED)
+
+    def reset_size(self):
+        screen_y_adj = int(self.screen_y * .95)  # Reduce height about 5% so we don't overlap windows taskbar
+
+        # Make large square window for main plots
+        self.fig1.set_size_inches(screen_y_adj / self.dpi, screen_y_adj / self.dpi)
 
 
 class TextObjects:
