@@ -234,7 +234,7 @@ class GraphicsObjects:
             self.var_ortho = tk.IntVar()
             self.b_orthogonal = self.ButtonMgr.add_check('Keep orthogonal', self.var_ortho, self.do_orthogonal_tk)
         else:
-            self.b_orthogonal = self.ButtonMgr.add_button('Make orthogonal', self.do_orthogonal)
+            self.b_orthogonal = self.ButtonMgr.add_button('Make orthogonal', do_orthogonal)
 
         self.b_quit = self.ButtonMgr.add_button('Quit', do_quit)
 
