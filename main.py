@@ -10,8 +10,8 @@ from matplotlib.lines import Line2D
 import numpy as np
 
 # My files
-import MatrixDemoMath as mm
-import MatrixDemoGraphics as mg
+import matrix_demo_math as mm
+import matrix_demo_graphics as mg
 import global_vars as gv
 
 # Thickness of matrix, input, and output vectors
@@ -23,16 +23,6 @@ Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
 stepsPerOrbit = 150  # This determines smoothness of animation
 dotsPerOrbit = 40  # Number of circular patches to plot on unit circle
-
-if __name__ == '__main__':
-    print('\nMatrix demo instructions:\n\n' +
-          '"space" toggles animation\n' +
-          '"c" toggles circumference dots\n' +
-          '"h" toggles projection lines\n' +
-          '"u" normalizes input vectors to unit length\n' +
-          '"2" toggles 1 vs 2 matrix rows\n' +
-          'Left mouse button drags vectors\n' +
-          '"x" to exit')
 
 # Determine steps between circumference dots
 u = mm.UnitCircleStuff(stepsPerOrbit, dotsPerOrbit, mg.CIRCUMFERENCE_COLOR1, mg.CIRCUMFERENCE_COLOR2)
@@ -122,9 +112,9 @@ lineOutputY = gv.ax2.add_line(Line2D([0, 0], [1, 1],
 # Need to call this the first time or else objects won't draw later
 plt.pause(0.01)
 localRedrawAxes = False
-localAnimate = mg.flagAnimate  # Need local copy of this flag so we can detect when it changes state
+localAnimate = mg.settings.flagAnimate  # Need local copy of this flag so we can detect when it changes state
 
-while mg.quitflag == 0:
+while mg.settings.quitflag == 0:
     # V1 is "input" vector in top-right plot
     vector_input = [u.unitVectorX[currentStep], u.unitVectorY[currentStep]]
 
@@ -150,7 +140,7 @@ while mg.quitflag == 0:
         lineShadow[v].set_data(shadowXvalues, shadowYvalues)
 
     # Update input vector text
-    if mg.flagCircum:
+    if mg.settings.flagCircum:
         # Use rainbow color for text
         if TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES:
             gObjects.textObj.update_input_vector(vector_input, u.stepColorList[currentStep])
@@ -161,7 +151,7 @@ while mg.quitflag == 0:
         gObjects.textObj.update_input_vector(vector_input, mg.INPUT_VECTOR_COLOR)
 
     # Update output vector text
-    gObjects.textObj.update_output_vector(vector_output, mg.matrixRowsToShow)
+    gObjects.textObj.update_output_vector(vector_output, mg.settings.matrixRowsToShow)
 
     # Draw text
     gObjects.textObj.redraw()
@@ -171,7 +161,7 @@ while mg.quitflag == 0:
     gv.barlist[0].set_height(vector_output[0])
     gv.axBar.draw_artist(gv.barlist[0])
 
-    if mg.matrixRowsToShow > 1:
+    if mg.settings.matrixRowsToShow > 1:
         gv.barlist[1].set_height(vector_output[1])
         gv.axBar.draw_artist(gv.barlist[1])
     else:
@@ -198,7 +188,7 @@ while mg.quitflag == 0:
     canvas.restore_region(gv.bg1)  # Restores static elements and erases background
     arrowInput.set_positions((0, 0), tuple(vector_input))
 
-    if ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES and mg.flagCircum:
+    if ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES and mg.settings.flagCircum:
         # If showing circumference colors, then make arrows black, which is less distracting
         arrowInput.set_color('k')
         arrowOutput.set_color('k')
@@ -207,7 +197,7 @@ while mg.quitflag == 0:
         arrowInput.set_color(mg.INPUT_VECTOR_COLOR)
         arrowOutput.set_color(mg.OUTPUT_VECTOR_COLOR)
 
-    if mg.matrixRowsToShow <= 1:
+    if mg.settings.matrixRowsToShow <= 1:
         # 1-D input vector
         #
         # Draw unit arrow and blue arrow for first matrix row,
@@ -215,7 +205,7 @@ while mg.quitflag == 0:
         gv.ax1.draw_artist(arrowInput)
     else:
         # 2-D input matrix
-        if mg.flagCircum:
+        if mg.settings.flagCircum:
             # Draw all items including circumference dots
             for p in gv.ax1.patches:
                 gv.ax1.draw_artist(p)
@@ -225,16 +215,16 @@ while mg.quitflag == 0:
             gv.ax1.draw_artist(matrixArrows[1])
             gv.ax1.draw_artist(arrowInput)
 
-    if mg.flagShadow:
+    if mg.settings.flagShadow:
         # Draw "shadow" projections
-        for v in range(0,mg.matrixRowsToShow):
+        for v in range(0,mg.settings.matrixRowsToShow):
             gv.ax1.draw_artist(lineNormal[v])
             gv.ax1.draw_artist(lineShadow[v])
 
     # Draw bottom-right graph elements, if needed
     canvas.restore_region(gv.bg2)  # Restores static elements and erases background
 
-    if mg.matrixRowsToShow > 1:
+    if mg.settings.matrixRowsToShow > 1:
         arrowOutput.set_positions((0, 0), tuple(vector_output))
         arrowOutput.set_arrowstyle("simple", head_length=min(sum([abs(x) for x in vector_output]),0.5))
     else:
@@ -243,11 +233,11 @@ while mg.quitflag == 0:
         arrowOutput.set_arrowstyle("simple", head_length=min(abs(vector_output[0]),0.5))
 
     # Draw output vectors
-    if mg.flagShadow:
+    if mg.settings.flagShadow:
         # [x1, x2], [y1, y2] draws horizontal line
         lineOutputX.set_data([0, vector_output[0]], [0, 0])
 
-        if  mg.matrixRowsToShow > 1:
+        if  mg.settings.matrixRowsToShow > 1:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
         else:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, 0])
@@ -255,7 +245,7 @@ while mg.quitflag == 0:
         gv.ax2.draw_artist(lineOutputY)
 
     # Draw purple circle patches
-    if mg.flagCircum & (mg.matrixRowsToShow > 1):
+    if mg.settings.flagCircum & (mg.settings.matrixRowsToShow > 1):
         [gv.ax2.draw_artist(p) for p in gv.ax2.patches]
     else:
         gv.ax2.draw_artist(arrowOutput)
@@ -272,75 +262,100 @@ while mg.quitflag == 0:
         plt.pause(0.01) # Need this to redraw entire plot axis when output panel (lower right) is togged on/off
         localRedrawAxes = False
 
-    while not mg.quitflag:
+    while not mg.settings.quitflag:
 
         # Need this to update graphics, and respond to GUI events, e.g. button presses.
         canvas.flush_events()
 
-        if localAnimate and not mg.flagAnimate:
+        if localAnimate and not mg.settings.flagAnimate:
             # Global flag just switched off. Turn off local animation, but also break so we run one more loop
             localAnimate = False
             break
-        if not localAnimate and mg.flagAnimate:
+        if not localAnimate and mg.settings.flagAnimate:
             # Global flag just switched on. Copy state to local flag
             localAnimate = True
 
-        if mg.flagMouseDownOnset:
+        if mg.settings.flagMouseDownOnset:
             # Onset of mouse click
 
             # Clear flag so we don't come back
             mg.flagMouseDownOnset = False
 
-            if mg.matrixRowsToShow == 1:
+            if mg.settings.matrixRowsToShow == 1:
                 # Adjust row one, since it's the only one showing
-                mg.whichRowToAdjust = 0
+                mg.settings.whichRowToAdjust = 0
             else:
                 # Determine which row to adjust by
                 # calculating distance from mouse cursor
-                dx1 = Array1[0,0] - mg.flagX
-                dy1 = Array1[0,1] - mg.flagY
-                dx2 = Array1[1,0] - mg.flagX
-                dy2 = Array1[1,1] - mg.flagY
+                dx1 = Array1[0,0] - mg.settings.flagX
+                dy1 = Array1[0,1] - mg.settings.flagY
+                dx2 = Array1[1,0] - mg.settings.flagX
+                dy2 = Array1[1,1] - mg.settings.flagY
 
                 if ((dx1*dx1+dy1*dy1) > (dx2*dx2+dy2*dy2)):
                     # Mouse is farther from row 1 vector than 2, so adjust row 2
-                    mg.whichRowToAdjust = 1
+                    mg.settings.whichRowToAdjust = 1
                 else:
                     # Mouse is farther from row 2 vector than row 1, so adjust row 1
-                    mg.whichRowToAdjust = 0
+                    mg.settings.whichRowToAdjust = 0
 
-        if mg.flagChangeMatrix:
+        if mg.settings.flagChangeMatrix:
             mg.flagRecalc = False
             mg.flagChangeMatrix = False
-            if mg.flagX is not None and mg.flagY is not None:  # Because x, y won't be valid if mouse went out of bounds
-                r = mg.whichRowToAdjust
-                if r == -1:
-                    # User hit letter "u", so we normalize matrix rows to unit length
-                    m1 = np.linalg.norm(Array1[0, :])
-                    m2 = np.linalg.norm(Array1[1, :])
-                    Array1[0, :] = Array1[0, :] / m1
-                    Array1[1, :] = Array1[1, :] / m2
-                    matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
+            r = mg.settings.whichRowToAdjust
+            if r == -1:
+                # Force orthogonal
+                Array1[1, 0] = -Array1[0, 1]
+                Array1[1, 1] = Array1[0, 0]
+                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
+                matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
+            elif r == -2:
+                # Force unit vector ... currently not used, but can resurrect
+                m1 = np.linalg.norm(Array1[0, :])
+                m2 = np.linalg.norm(Array1[1, :])
+                Array1[0, :] = Array1[0, :] / m1
+                Array1[1, :] = Array1[1, :] / m2
+                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
+                matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
+#                u.updateCircs(Array1)
+            elif mg.settings.flagX is not None and mg.settings.flagY is not None:
+                # Because x, y won't be valid if mouse went out of bounds
+                # User is using mouse to draw matrix vectors
+                Array1[r, 0] = mg.settings.flagX
+                Array1[r, 1] = mg.settings.flagY
+
+                if mg.settings.keep_ortho and r == 0:
+                    Array1[1, 0] = -Array1[0, 1]
+                    Array1[1, 1] = Array1[0, 0]
                     matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
-                else:
-                    # User is using mouse to draw matrix vectors
-                    Array1[r, 0] = mg.flagX
-                    Array1[r, 1] = mg.flagY
-                    matrixArrows[r].set_positions((0, 0), tuple(Array1[r, :]))
-                u.updateCircs(Array1)
-                gObjects.textObj.update_array_text(Array1)  # Will this take effect without calling redraw()???
+                matrixArrows[r].set_positions((0, 0), tuple(Array1[r, :]))
+            else:
+                # Nothing was changed after all.
                 break
 
-        if mg.flagRedrawAxes:
+            u.updateCircs(Array1)
+            gObjects.textObj.update_array_text(Array1)  # Will this take effect without calling redraw()???
+
+            break
+
+        if mg.settings.flagRedrawAxes:
             mg.flagRedrawAxes = False
             localRedrawAxes = True
             break
 
-        if mg.flagRecalc:
+        if mg.settings.flagRecalc:
             # If recalc flag is set, then break out of loop and also update text on circumference button
-            gObjects.b_circum.SetTextVisible(mg.matrixRowsToShow > 1)
-            # This is needed for button text to update
-            gObjects.ButtonMgr.fig2.canvas.draw()
+            if gObjects.ButtonMgr.USE_TK:
+                if mg.settings.matrixRowsToShow > 1:
+                    gObjects.b_circum.state(["!disabled"])
+                else:
+                    gObjects.b_circum.state(["disabled"])
+            else:
+                gObjects.b_circum.SetTextVisible(mg.settings.matrixRowsToShow > 1)
+
+            if not gObjects.ButtonMgr.USE_TK:
+                # This is needed for button text to update
+                gObjects.ButtonMgr.fig2.canvas.draw()
 
             # Clear flag so we don't come back
             mg.flagRecalc = False
@@ -350,15 +365,15 @@ while mg.quitflag == 0:
             break
 
 
-    if mg.quitflag:
+    if mg.settings.quitflag:
         break
 
-    if mg.flagAnimate:
+    if mg.settings.flagAnimate:
         currentStep = currentStep + 1
         if currentStep >= u.numsteps:
             cycles = cycles + 1
             currentStep = currentStep - stepsPerOrbit
 
-if mg.quitflag == 0:
+if mg.settings.quitflag == 0:
     plt.show()  # This will block until window is closed.
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

@@ -1,33 +1,44 @@
+import tkinter as tk
+from tkinter import ttk
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.widgets import Button
 
-
 class ButtonManager:
 
     def __init__(self, _is_separate = True):
 
-        self.USE_SEPARATE_BUTTON_PANEL = _is_separate   # Put buttons on separate window
-        self.BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
+        self.USE_TK = True
 
-        if self.USE_SEPARATE_BUTTON_PANEL:
-            # Button dimensions are all expressed as fraction of window size
-            self.BUTTON_Y_COORD = 0.8
-            self.BUTTON_HEIGHT = 0.15
-            self.BUTTON_WIDTH = 0.8
-            self.BUTTON_X_START = 0.1
+        if self.USE_TK:
+            root = tk.Tk()
+            self.root = root
+            root.title(string="Choose")
+            frame1 = tk.Frame(root, highlightbackground="black", highlightthickness=1, relief="flat", borderwidth=5)
+            frame1.pack(side=tk.TOP, fill=tk.BOTH, padx=20, pady=20)
+            root.geometry("+%d+%d" % (5, 5))
         else:
-            # Place buttons at top of plot window. This gives fewer windows, but
-            # causes annoying flicker in plots when mouse cursor moves over button.
-            # Button dimensions are all expressed as fraction of window size
-            self.BUTTON_WIDTH = 0.1
-            self.BUTTON_HEIGHT = 0.03   # When > 0.1, buttons disappear - presumably covered by graphs
-            self.BUTTON_Y_COORD = 0.95  # Buttons are near top of screen
-            self.BUTTON_X_START = 0.15
+            self.USE_SEPARATE_BUTTON_PANEL = _is_separate   # Put buttons on separate window
+            self.BUTTON_GAP = 0.01                  # Space (as fraction of screen) between buttons
 
-        self.buttonX = self.BUTTON_X_START
-        self.buttonY = self.BUTTON_Y_COORD
+            if self.USE_SEPARATE_BUTTON_PANEL:
+                # Button dimensions are all expressed as fraction of window size
+                self.BUTTON_Y_COORD = 0.8
+                self.BUTTON_HEIGHT = 0.15
+                self.BUTTON_WIDTH = 0.8
+                self.BUTTON_X_START = 0.1
+            else:
+                # Place buttons at top of plot window. This gives fewer windows, but
+                # causes annoying flicker in plots when mouse cursor moves over button.
+                # Button dimensions are all expressed as fraction of window size
+                self.BUTTON_WIDTH = 0.1
+                self.BUTTON_HEIGHT = 0.03   # When > 0.1, buttons disappear - presumably covered by graphs
+                self.BUTTON_Y_COORD = 0.95  # Buttons are near top of screen
+                self.BUTTON_X_START = 0.15
+
+            self.buttonX = self.BUTTON_X_START
+            self.buttonY = self.BUTTON_Y_COORD
 
         # Create figure 1 for main plots
         self.fig1 = plt.figure(1)
@@ -54,7 +65,7 @@ class ButtonManager:
         self.canvas1 = self.fig1.canvas
         #        canvas1.manager.window.wm_geometry("%dx%d" % (screen_y,screen_y))
 
-        if self.USE_SEPARATE_BUTTON_PANEL:
+        if (not self.USE_TK) and self.USE_SEPARATE_BUTTON_PANEL:
             # Buttons on plot window cause annoying flicker whenever mouse moves over button
             # (even if not clicked). Solve this by putting buttons on their own window
 
@@ -77,6 +88,8 @@ class ButtonManager:
             self.move_window(self.canvas2, 10, 10)
             # Move plot window to the right to avoid overlapping buttons
             self.move_window(self.canvas1, menu_x_pixels + 20, 0)
+        else:
+            self.move_window(self.canvas1, 250, 0)
 
     def set_fig1_size(self):
 
@@ -87,7 +100,19 @@ class ButtonManager:
 
     def add_button(self, text, func):
 
-        return Button2(self.next_button_axis(), text, func)
+        if self.USE_TK:
+            b = ttk.Button(self.root, text=text, command=func)
+            b.pack(fill=tk.X, ipadx=10, ipady=10, padx=10, pady=5)
+            return b
+        else:
+            return Button2(self.next_button_axis(), text, func)
+
+    def add_check(self, text, var_int, func):
+
+        if self.USE_TK:
+            b = ttk.Checkbutton(self.root, text=text, variable=var_int, command=func)
+            b.pack(fill=tk.X, ipadx=10, ipady=10, padx=10, pady=5)
+            return b
 
     def next_button_axis(self):
         # Generate axes for the next button in series (either horizontal or vertical row)
@@ -108,7 +133,6 @@ class ButtonManager:
             canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
         else:
             print("Unsupported backend " + self.backend)
-
 
 
 # Implements a Button that can be disabled by hiding text

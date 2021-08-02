@@ -1,3 +1,5 @@
+import tkinter as tk
+from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pylab
@@ -6,7 +8,7 @@ import numpy as np
 
 import global_vars as gv
 
-import ButtonManager as bm
+import button_manager as bm
 
 axisLimit = 2  # Coordinate limits for x-y plots
 
@@ -38,20 +40,25 @@ MATRIX_ROW2_COLOR = (0.25, 0.75, 0.25)  # Light green
 SHADOW1_COLOR = (0, 0, 0.5)
 SHADOW2_COLOR = (0, 0.35, 0)
 
-quitflag = False  # When true, program will exit
-flagAnimate = True  # When true, graph will animate
-flagChangeMatrix = False  # When true, will update matrix and redraw
-flagCircum = False  # When true, will plot ring of red/purple dots on circumference
-flagRecalc = False  # When true, will redraw existing graph items
-flagRedrawAxes = False  # When true, will redraw existing graph axes
-flagShadow = True
-flagMouseDown = False
-flagMouseDownOnset = False
-flagX = 0  # Indicates mouse x position
-flagY = 0  # Indicates mouse y position
-matrixRowsToShow = 1
-whichRowToAdjust = 0
+class Settings():
 
+    def __init__(self):
+        self.quitflag = False  # When true, program will exit
+        self.flagAnimate = True  # When true, graph will animate
+        self.flagChangeMatrix = False  # When true, will update matrix and redraw
+        self.flagCircum = False  # When true, will plot ring of red/purple dots on circumference
+        self.flagRecalc = False  # When true, will redraw existing graph items
+        self.flagRedrawAxes = False  # When true, will redraw existing graph axes
+        self.flagShadow = True
+        self.flagMouseDown = False
+        self.flagMouseDownOnset = False
+        self.flagX = 0  # Indicates mouse x position
+        self.flagY = 0  # Indicates mouse y position
+        self.matrixRowsToShow = 1
+        self.whichRowToAdjust = 0
+        self.keep_ortho = 0
+
+settings = Settings()
 
 # Create initial x-y, text, and bar plots, then save backgrounds
 def create_initial_graphics(canvas):
@@ -111,80 +118,75 @@ def create_initial_graphics(canvas):
 def on_mouse_press(event):
     if event.inaxes != gv.ax1:
         return
-    global flagX, flagY, flagMouseDown, flagMouseDownOnset, whichRowToAdjust, flagChangeMatrix
 
     # Left mouse press initiates dragging of matrix.
     if event.button == mpl.backend_bases.MouseButton.LEFT:
-        flagMouseDown = True
-        flagMouseDownOnset = True
-        flagChangeMatrix = True
-        flagX = event.xdata
-        flagY = event.ydata
+        settings.flagMouseDown = True
+        settings.flagMouseDownOnset = True
+        settings.flagChangeMatrix = True
+        settings.flagX = event.xdata
+        settings.flagY = event.ydata
 
 
 def on_mouse_release(event):
     if event.inaxes != gv.ax1:
         return
-    global flagMouseDown, flagChangeMatrix
-    flagMouseDown = False
-    flagChangeMatrix = False
+
+    settings.flagMouseDown = False
+    settings.flagChangeMatrix = False
 
 
 def on_mouse_move(event):
     if event.inaxes != gv.ax1:
         return
-    global flagMouseDown, flagRecalc, flagX, flagY, flagChangeMatrix
-    if flagMouseDown:
-        flagX = event.xdata
-        flagY = event.ydata
-        flagChangeMatrix = True
+
+    if settings.flagMouseDown:
+        settings.flagX = event.xdata
+        settings.flagY = event.ydata
+        settings.flagChangeMatrix = True
 
 
 def do_1_vs_2(event=None):
-    global matrixRowsToShow, flagRecalc
-    matrixRowsToShow = 3 - matrixRowsToShow  # Toggle between 1 and 2 rows
-    flagRecalc = True
+    settings.matrixRowsToShow = 3 - settings.matrixRowsToShow  # Toggle between 1 and 2 rows
+    settings.flagRecalc = True
 
 
 def do_shadow(event=None):
-    global flagShadow, flagRecalc
-    flagShadow = 1 - flagShadow
-    flagRecalc = True
+    settings.flagShadow = 1 - settings.flagShadow
+    settings.flagRecalc = True
 
 
 def do_quit(event=None):
-    global quitflag
-    quitflag = True
+    settings.quitflag = True
 
 
 def do_animate(event=None):
-    global flagAnimate
-    flagAnimate = not flagAnimate
+    settings.flagAnimate = not settings.flagAnimate
 
 
-def do_show_circle(event=None):
-    global flagCircum, flagRecalc
-    flagCircum = not flagCircum
-    flagRecalc = True
+def do_show_circle(_event=None):
+    settings.flagCircum = not settings.flagCircum
+    settings.flagRecalc = True
+
+
+# This is only called if using matplotlib buttons. For tk buttons, see method within GraphicsObjects
+def do_orthogonal(_event=None):
+    settings.flagChangeMatrix = True
+    settings.whichRowToAdjust = -1
+
+
+def on_keydown(e):
+    if e.char == ' ':
+        do_animate()
 
 
 # Keyboard press
+# no longer used
 def on_keypress(event):
     global flagChangeMatrix, whichRowToAdjust
     #    print('key: ', event.key, event.xdata, event.ydata)
-    if event.key == "x":
-        do_quit()
     if event.key == " ":
         do_animate()
-    if event.key == "c":
-        do_show_circle()
-    if event.key == "h":
-        do_shadow()
-    if event.key == "u":
-        flagChangeMatrix = True
-        whichRowToAdjust = -1
-    if event.key == "2":
-        do_1_vs_2()
 
 
 # Format a single floating point number to have 3 decimals
@@ -223,16 +225,27 @@ class GraphicsObjects:
         self.ButtonMgr = bm.ButtonManager()
 
         # Create row of buttons. current axis will either be 1 or 2
-        self.b_animate = self.ButtonMgr.add_button('Toggle animate\n(space bar)', do_animate)
+        self.b_animate = self.ButtonMgr.add_button('Toggle animate', do_animate)
         # self.b_shadow = self.ButtonMgr.add_button('Toggle projections\n(h)', do_shadow) # This isn't used much
-        self.b_1_vs_2 = self.ButtonMgr.add_button('Toggle 1 vs 2 row matrix\n (2)', do_1_vs_2)
-        self.b_circum = self.ButtonMgr.add_button('Toggle Circumference\n (c)', do_show_circle)
-        self.b_quit = self.ButtonMgr.add_button('Quit\n(x)', do_quit)
+        self.b_1_vs_2 = self.ButtonMgr.add_button('Toggle 1 vs 2 row matrix', do_1_vs_2)
+        self.b_circum = self.ButtonMgr.add_button('Toggle Circumference', do_show_circle)
+
+        if self.ButtonMgr.USE_TK:
+            self.var_ortho = tk.IntVar()
+            self.b_orthogonal = self.ButtonMgr.add_check('Keep orthogonal', self.var_ortho, self.do_orthogonal_tk)
+        else:
+            self.b_orthogonal = self.ButtonMgr.add_button('Make orthogonal', self.do_orthogonal)
+
+        self.b_quit = self.ButtonMgr.add_button('Quit', do_quit)
 
         #        self.b_fix = self.ButtonMgr.add_button('Reset size', self.reset_size)
 
         # The toggle-circumference button starts disabled
-        self.b_circum.SetTextVisible(False)
+        if self.ButtonMgr.USE_TK:
+            self.b_circum.state(["disabled"])
+            self.var_ortho.set(0)
+        else:
+            self.b_circum.SetTextVisible(False)
 
         # Make fig 1 the current axis again
         plt.figure(1)
@@ -253,15 +266,26 @@ class GraphicsObjects:
         # Windows should respond to key press events
         fig1.canvas.mpl_connect('key_press_event', on_keypress)
 
-        fig2 = self.ButtonMgr.fig2
-        if fig2 is not None:
-            # Key press events
-            fig2.canvas.mpl_connect('key_press_event', on_keypress)
+        if self.ButtonMgr.USE_TK:
+            self.ButtonMgr.root.bind("<KeyPress>", on_keydown)
+        else:
+            fig2 = self.ButtonMgr.fig2
+            if fig2 is not None:
+                # Key press events
+                fig2.canvas.mpl_connect('key_press_event', on_keypress)
 
         plt.figure(1)
 
     def reset_size(self, event):
         self.ButtonMgr.set_fig1_size()
+
+    def do_orthogonal_tk(self):
+        # This will handle transient change
+        settings.flagChangeMatrix = self.var_ortho.get()
+
+        # This will keep permanent toggle, so that future changes to row0 are reflected in row1
+        settings.keep_ortho = self.var_ortho.get()
+        settings.whichRowToAdjust = -1
 
 
 class TextObjects:
@@ -312,7 +336,7 @@ class TextObjects:
     # Shift y-coordinates of text so that text always looks centered.
     # Specifically, if showing 2 rows, then top is moved up slightly from center
     def set_row1_position(self):
-        if matrixRowsToShow > 1:
+        if settings.matrixRowsToShow > 1:
             self.textObjArrayRow1.set_y(TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET)
             self.textObjOutputVectorRow1.set_y(TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET)
         else:
@@ -348,7 +372,7 @@ class TextObjects:
         # "draw_artist" draws new objects efficiently, without updating entire plot
         self.ax_text.draw_artist(self.textObjArrayRow1)
         self.ax_text.draw_artist(self.textObjOutputVectorRow1)
-        if matrixRowsToShow > 1:
+        if settings.matrixRowsToShow > 1:
             self.ax_text.draw_artist(self.textObjArrayRow2)
             self.ax_text.draw_artist(self.textObjOutputVectorRow2)
         self.ax_text.draw_artist(self.textObjInputVector1)
