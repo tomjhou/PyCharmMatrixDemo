@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import numpy as np
-import time
 
 # My files
 import matrix_demo_math as mm
@@ -17,8 +16,10 @@ import global_vars as gv
 
 # Thickness of matrix, input, and output vectors
 VECTOR_THICKNESS = 30
-ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  # If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
-TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False  #  If true, then text color matches the color of circumference circles. Otherwise, remains default red/purple
+# If true, then arrow color matches the color of circumference circles. Otherwise, remains default red/purple
+ARROW_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False
+#  If true, then text color matches the color of circumference circles. Otherwise, remains default red/purple
+TEXT_COLORS_MATCH_CIRCUMFERENCE_CIRCLES = False
 
 Array1 = np.array([[1.0, 0.0], [0.0, 1.0]])
 
@@ -47,7 +48,7 @@ gObjects.textObj.update_array_text(Array1)
 # Add vector1 (top row of 2x2 matrix) to top-right graph
 matrixArrows = [mpatches.FancyArrowPatch((0, 0), tuple(Array1[0, :]),
                                          color=mg.MATRIX_ROW1_COLOR,
-                                         mutation_scale=VECTOR_THICKNESS)]   # Thickness
+                                         mutation_scale=VECTOR_THICKNESS)]  # Thickness
 gv.ax1.add_patch(matrixArrows[0])
 
 # Add vector2 (bottom row of 2x2 matrix) to top-right graph
@@ -92,7 +93,7 @@ lineNormal.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
                                          linestyle=':')))  # Dotted line
 lineShadow.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
                                          linewidth=3,
-                                         linestyle='--',   # Dashed line
+                                         linestyle='--',  # Dashed line
                                          color=mg.SHADOW1_COLOR)))
 # Normal/shadow for second row
 lineNormal.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
@@ -100,16 +101,16 @@ lineNormal.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
                                          linestyle=':')))  # Dotted line
 lineShadow.append(gv.ax1.add_line(Line2D([0, 0], [1, 1],
                                          linewidth=3,
-                                         linestyle='--',   # Dashed line
+                                         linestyle='--',  # Dashed line
                                          color=mg.SHADOW2_COLOR)))
 
 # Add shadow lines to output axis
 lineOutputX = gv.ax2.add_line(Line2D([0, 0], [1, 1],
-                                  linewidth=3,
-                                  color=mg.SHADOW1_COLOR))
+                                     linewidth=3,
+                                     color=mg.SHADOW1_COLOR))
 lineOutputY = gv.ax2.add_line(Line2D([0, 0], [1, 1],
-                                  linewidth=3,
-                                  color=mg.SHADOW2_COLOR))
+                                     linewidth=3,
+                                     color=mg.SHADOW2_COLOR))
 
 # Need to call this the first time or else objects won't draw later
 plt.pause(0.01)
@@ -123,7 +124,7 @@ while mg.settings.quitflag == 0:
     # V2 is transformed vector in lower-right plot
     vector_output = np.matmul(Array1, vector_input)
 
-    for v in range(0,2):
+    for v in range(0, 2):
         # Get normal vector for matrix row 1
         matrixRowNorm = Array1[v, :] / np.linalg.norm(Array1[v, :])
 
@@ -183,7 +184,7 @@ while mg.settings.quitflag == 0:
 
         # Add new output dot
         circ = u.patchList2[currentDot]
-        gv.ax2.add_patch(circ)      # This is needed for draw_artist to work. However, patch may now show up extraneously, e.g. when mouse rolls over button
+        gv.ax2.add_patch(circ)
         gv.ax2.draw_artist(circ)
 
     # Draw top-right "INPUT VECTOR" graph
@@ -228,18 +229,18 @@ while mg.settings.quitflag == 0:
 
     if mg.settings.matrixRowsToShow > 1:
         arrowOutput.set_positions((0, 0), tuple(vector_output))
-        arrowOutput.set_arrowstyle("simple", head_length=min(sum([abs(x) for x in vector_output]),0.5))
+        arrowOutput.set_arrowstyle("simple", head_length=min(sum([abs(x) for x in vector_output]), 0.5))
     else:
         # Output (purple) arrow is horizontal
         arrowOutput.set_positions((0, 0), (vector_output[0], 0))
-        arrowOutput.set_arrowstyle("simple", head_length=min(abs(vector_output[0]),0.5))
+        arrowOutput.set_arrowstyle("simple", head_length=min(abs(vector_output[0]), 0.5))
 
     # Draw output vectors
     if mg.settings.flagShadow:
         # [x1, x2], [y1, y2] draws horizontal line
         lineOutputX.set_data([0, vector_output[0]], [0, 0])
 
-        if  mg.settings.matrixRowsToShow > 1:
+        if mg.settings.matrixRowsToShow > 1:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, vector_output[1]])
         else:
             lineOutputY.set_data([vector_output[0], vector_output[0]], [0, 0])
@@ -261,7 +262,7 @@ while mg.settings.quitflag == 0:
     canvas.blit(gv.ax2.bbox)
 
     if localRedrawAxes:
-        plt.pause(0.01) # Need this to redraw entire plot axis when output panel (lower right) is togged on/off
+        plt.pause(0.01)  # Need this to redraw entire plot axis when output panel (lower right) is togged on/off
         localRedrawAxes = False
 
     while not mg.settings.quitflag:
@@ -289,12 +290,12 @@ while mg.settings.quitflag == 0:
             else:
                 # Determine which row to adjust by
                 # calculating distance from mouse cursor
-                dx1 = Array1[0,0] - mg.settings.flagX
-                dy1 = Array1[0,1] - mg.settings.flagY
-                dx2 = Array1[1,0] - mg.settings.flagX
-                dy2 = Array1[1,1] - mg.settings.flagY
+                dx1 = Array1[0, 0] - mg.settings.flagX
+                dy1 = Array1[0, 1] - mg.settings.flagY
+                dx2 = Array1[1, 0] - mg.settings.flagX
+                dy2 = Array1[1, 1] - mg.settings.flagY
 
-                if ((dx1*dx1+dy1*dy1) > (dx2*dx2+dy2*dy2)):
+                if (dx1 * dx1 + dy1 * dy1) > (dx2 * dx2 + dy2 * dy2):
                     # Mouse is farther from row 1 vector than 2, so adjust row 2
                     mg.settings.whichRowToAdjust = 1
                 else:
@@ -309,7 +310,7 @@ while mg.settings.quitflag == 0:
                 # Force row1 to be orthogonal to row0
                 Array1[1, 0] = -Array1[0, 1]
                 Array1[1, 1] = Array1[0, 0]
-#                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
+                #                matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
                 matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
             elif r == -2:
                 # Force unit vector ... currently not used, but can resurrect
@@ -319,7 +320,7 @@ while mg.settings.quitflag == 0:
                 Array1[1, :] = Array1[1, :] / m2
                 matrixArrows[0].set_positions((0, 0), tuple(Array1[0, :]))
                 matrixArrows[1].set_positions((0, 0), tuple(Array1[1, :]))
-#                u.updateCircs(Array1)
+            #                u.updateCircs(Array1)
             elif mg.settings.flagX is not None and mg.settings.flagY is not None:
                 # Because x, y won't be valid if mouse went out of bounds
                 # User is using mouse to draw matrix vectors
@@ -360,15 +361,13 @@ while mg.settings.quitflag == 0:
             break
 
         if localAnimate:
-
             break
-
 
     if mg.settings.quitflag:
         break
 
     if mg.settings.flagAnimate:
-        currentStepFloat = currentStepFloat + gObjects.animation_speed / 25
+        currentStepFloat = currentStepFloat + mg.settings.animation_speed / 25
 
         if currentStepFloat >= u.numsteps:
             cycles = cycles + 1

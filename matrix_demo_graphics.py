@@ -42,6 +42,8 @@ class Settings:
     def __init__(self):
         self.quitflag = False  # When true, program will exit
         self.flagAnimate = True  # When true, graph will animate
+        self.animation_speed = 10  # Max is 100. Start slow so user can see what is going on
+
         self.flagChangeMatrix = False  # When true, will update matrix and redraw
         self.flagCircum = False  # When true, will plot ring of red/purple dots on circumference
         self.flagRecalc = False  # When true, will redraw existing graph items
@@ -171,7 +173,6 @@ def on_keydown(e):
 # Keyboard press
 # no longer used
 def on_keypress(event):
-    global flagChangeMatrix, whichRowToAdjust
     #    print('key: ', event.key, event.xdata, event.ydata)
     if event.key == " ":
         do_animate()
@@ -201,8 +202,6 @@ class GraphicsObjects:
     def __init__(self):
         global FONT_SIZE
 
-        self.animation_speed = 50
-
         mpl.use('TkAgg')  # TkAgg doesn't need installing. Works well.
 
         # Gets rid of toolbar under plot
@@ -225,13 +224,17 @@ class GraphicsObjects:
 
         self.label_speed = ttk.Label(self.frame1, text="Animation speed =", anchor=tk.CENTER)
         self.label_speed.pack(fill=tk.X)
-        self.speed_var = tk.IntVar(root)
-        self.slider1 = ttk.Scale(self.frame1, from_=0, to=100, command=self.do_speed_slider)  # , variable=self.speed_var)
-#        self.slider1.bind("<ButtonRelease-1>", self.do_speed_slider_button_release)
+        #        self.speed_var = tk.IntVar(root)
+        self.slider1 = ttk.Scale(self.frame1, from_=0, to=100,
+                                 command=self.do_speed_slider)  # , variable=self.speed_var)
+        #        self.slider1.bind("<ButtonRelease-1>", self.do_speed_slider_button_release)
         self.slider1.pack(fill=tk.X)
-        # Set initial value
-#        self.speed_var.set(self.animation_speed)
-        self.slider1.set(self.animation_speed)
+
+        # Set initial value. Using set() will trigger callback, which updates label text.
+        # Don't need to bother with IntVar(), as the callback gets value as argument, and it is easier to
+        # just read that.
+        #        self.speed_var.set(self.animation_speed)
+        self.slider1.set(settings.animation_speed)
 
         # Create row of buttons. current axis will either be 1 or 2
         self.b_animate = self.add_button('Toggle animate', do_animate)
@@ -261,8 +264,14 @@ class GraphicsObjects:
         # Menu window should respond to key press events too
         root.bind("<KeyPress>", on_keydown)
 
+        # Force menu to show, so we can get its width in pixels
+        root.update()
+
         # Move plot window so it doesn't overlap menu buttons
         self.move_window_aside_menu()
+        # Force figure to draw, in case OS wants to resize it slightly (must do this
+        # before drawing the background bitmaps).
+        self.canvas1.draw()
 
         # Initial states
         self.b_circum.state(["disabled"])
@@ -295,7 +304,7 @@ class GraphicsObjects:
     def do_speed_slider(self, val):
         # We come here when user moves slider ... generates lots of intermediate callbacks
         int_val = int(float(val))
-        self.animation_speed = int_val
+        settings.animation_speed = int_val
         self.label_speed['text'] = "Animation speed = " + str(int_val) + "%"
 
     def do_1_vs_2(self):
@@ -309,7 +318,10 @@ class GraphicsObjects:
             self.b_orthogonal.config(state=tk.DISABLED)
 
     def reset_size(self):
-        screen_y_adj = int(self.screen_y * .95)  # Reduce height about 5% so we don't overlap windows taskbar
+        # Reduce height so we don't overlap taskbar. PC needs about 5% reduction, MacOS about 10%
+        # If we don't shrink enough, strange things will happen as window may auto-resize slightly,
+        # screwing up the saved bitmaps
+        screen_y_adj = int(self.screen_y * .9)
 
         # Make large square window for main plots
         self.fig1.set_size_inches(screen_y_adj / self.dpi, screen_y_adj / self.dpi)
@@ -345,12 +357,14 @@ class TextObjects:
                                                      color=INPUT_VECTOR_COLOR)
 
         # Top, bottom of output vector. Color is set later?
-        self.textObjOutputVectorRow1 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
-                                                         TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-                                                         '')
-        self.textObjOutputVectorRow2 = self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
-                                                         TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
-                                                         '')
+        self.textObjOutputVectorRow1 = \
+            self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+                              TEXT_Y_COORD + TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+                              '')
+        self.textObjOutputVectorRow2 = \
+            self.make_ax_text(TEXT_STAR_X + TEXT_IN_OUT_X_OFFSET + TEXT_OPERATOR_X_SPACING,
+                              TEXT_Y_COORD - TEXT_MATRIX_ROW_Y_SPACING / 2 - TEXT_IN_OUT_Y_OFFSET,
+                              '')
 
         self.set_row1_position()
 
